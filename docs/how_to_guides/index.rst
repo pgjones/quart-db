@@ -8,3 +8,4 @@ How to guides
    bind_parameters.rst
    configuration.rst
    testing.rst
+   type_conversion.rst

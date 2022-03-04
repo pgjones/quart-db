@@ -1,7 +1,9 @@
 import asyncio
+import json
+from collections import defaultdict
 from contextlib import asynccontextmanager
 from types import TracebackType
-from typing import Any, AsyncGenerator, Dict, List, Optional, Tuple, Type, Union
+from typing import Any, AsyncGenerator, Callable, Dict, List, Optional, Tuple, Type, Union
 
 import asyncpg
 from buildpg import BuildError, render
@@ -137,6 +139,13 @@ class QuartDB:
         self._close_timeout = 5  # Seconds
         self._url = url
         self._pool: Optional[asyncpg.Pool] = None
+        self._type_converters: Dict[str, Dict[str, Tuple[Callable, Callable]]] = defaultdict(
+            dict,
+            pg_catalog={
+                "json": (json.dumps, json.loads),
+                "jsonb": (json.dumps, json.loads),
+            },
+        )
         if app is not None:
             self.init_app(app)
 
@@ -154,8 +163,18 @@ class QuartDB:
         self._pool = None
 
     async def initialize(self) -> None:
+        async def init(connection: asyncpg.Connection) -> None:
+            for schema, converters in self._type_converters.items():
+                for typename, converter in converters.items():
+                    await connection.set_type_codec(
+                        typename,
+                        encoder=converter[0],
+                        decoder=converter[1],
+                        schema=schema,
+                    )
+
         if self._pool is None:
-            self._pool = await asyncpg.create_pool(dsn=self._url)
+            self._pool = await asyncpg.create_pool(dsn=self._url, init=init)
 
     @asynccontextmanager
     async def connection(self) -> Any:
@@ -169,3 +188,13 @@ class QuartDB:
 
     async def release(self, connection: "Connection") -> None:
         await self._pool.release(connection._connection)
+
+    def set_converter(
+        self,
+        typename: str,
+        encoder: Callable,
+        decoder: Callable,
+        *,
+        schema: str = "public",
+    ) -> None:
+        self._type_converters[schema][typename] = (encoder, decoder)
