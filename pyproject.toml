@@ -1,0 +1,78 @@
+[tool.poetry]
+name = "quart-db"
+version = "0.1"
+description = "Quart-DB is a Quart extension that provides managed connection(s) to postgresql database(s)."
+authors = ["pgjones <philip.graham.jones@googlemail.com>"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Web Environment",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Topic :: Internet :: WWW/HTTP :: Dynamic Content",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+include = ["src/quart_db/py.typed"]
+license = "MIT"
+readme = "README.rst"
+repository = "https://gitlab.com/pgjones/quart-db/"
+
+[tool.black]
+line-length = 100
+target-version = ["py37"]
+
+[tool.isort]
+combine_as_imports = true
+force_grid_wrap = 0
+include_trailing_comma = true
+known_first_party = "quart_db, tests"
+line_length = 100
+multi_line_output = 3
+no_lines_before = "LOCALFOLDER"
+order_by_type = false
+reverse_relative = true
+
+[tool.mypy]
+allow_redefinition = true
+disallow_any_generics = false
+disallow_subclassing_any = true
+disallow_untyped_calls = false
+disallow_untyped_defs = true
+implicit_reexport = true
+no_implicit_optional = true
+show_error_codes = true
+strict = true
+strict_equality = true
+strict_optional = false
+warn_redundant_casts = true
+warn_return_any = false
+warn_unused_configs = true
+warn_unused_ignores = true
+
+[[tool.mypy.overrides]]
+module =["asyncpg.*", "buildpg.*"]
+ignore_missing_imports = true
+
+[tool.poetry.dependencies]
+asyncpg = ">=0.25.0"
+buildpg = ">=0.4"
+python = ">=3.7"
+quart = ">=0.16.3"
+
+[tool.poetry.dev-dependencies]
+tox = "*"
+
+[tool.pytest.ini_options]
+addopts = "--no-cov-on-fail --showlocals --strict-markers"
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[build-system]
+requires = ["poetry_core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
