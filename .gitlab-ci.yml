@@ -5,6 +5,7 @@ py37:
   - postgres
 
   variables:
+    DATABASE_URL: postgresql://quart_db:quart_db@postgres:5432/quart_db
     POSTGRES_DB: quart_db
     POSTGRES_USER: quart_db
     POSTGRES_PASSWORD: quart_db
@@ -21,6 +22,7 @@ py38:
   - postgres
 
   variables:
+    DATABASE_URL: postgresql://quart_db:quart_db@postgres:5432/quart_db
     POSTGRES_DB: quart_db
     POSTGRES_USER: quart_db
     POSTGRES_PASSWORD: quart_db
@@ -37,6 +39,7 @@ py39:
   - postgres
 
   variables:
+    DATABASE_URL: postgresql://quart_db:quart_db@postgres:5432/quart_db
     POSTGRES_DB: quart_db
     POSTGRES_USER: quart_db
     POSTGRES_PASSWORD: quart_db
@@ -53,6 +56,7 @@ py310:
   - postgres
 
   variables:
+    DATABASE_URL: postgresql://quart_db:quart_db@postgres:5432/quart_db
     POSTGRES_DB: quart_db
     POSTGRES_USER: quart_db
     POSTGRES_PASSWORD: quart_db
