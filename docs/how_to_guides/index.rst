@@ -7,5 +7,6 @@ How to guides
 
    bind_parameters.rst
    configuration.rst
+   migrations.rst
    testing.rst
    type_conversion.rst
