@@ -1,3 +1,4 @@
+import asyncio
 from types import TracebackType
 from typing import Any, AsyncGenerator, Dict, List, Optional, Tuple, Union
 
@@ -43,6 +44,7 @@ class Transaction:
 class Connection:
     def __init__(self, connection: asyncpg.Connection) -> None:
         self._connection = connection
+        self._lock = asyncio.Lock()
 
     async def execute(self, query: str, values: ValuesType = None) -> None:
         """Execute a query, with bind values if needed
@@ -55,7 +57,8 @@ class Connection:
 
         compiled_query, args = self._compile(query, values)
         try:
-            return await self._connection.execute(compiled_query, *args)
+            async with self._lock:
+                return await self._connection.execute(compiled_query, *args)
         except asyncpg.exceptions.UndefinedParameterError as error:
             raise UndefinedParameterError(str(error))
 
@@ -74,7 +77,8 @@ class Connection:
         compiled_query = compiled_queries[0][0]
         args = [query[1] for query in compiled_queries]
         try:
-            return await self._connection.executemany(compiled_query, args)
+            async with self._lock:
+                return await self._connection.executemany(compiled_query, args)
         except asyncpg.exceptions.UndefinedParameterError as error:
             raise UndefinedParameterError(str(error))
 
@@ -92,7 +96,8 @@ class Connection:
         """
         compiled_query, args = self._compile(query, values)
         try:
-            return await self._connection.fetch(compiled_query, *args)
+            async with self._lock:
+                return await self._connection.fetch(compiled_query, *args)
         except asyncpg.exceptions.UndefinedParameterError as error:
             raise UndefinedParameterError(str(error))
 
@@ -110,7 +115,8 @@ class Connection:
         """
         compiled_query, args = self._compile(query, values)
         try:
-            return await self._connection.fetchrow(compiled_query, *args)
+            async with self._lock:
+                return await self._connection.fetchrow(compiled_query, *args)
         except asyncpg.exceptions.UndefinedParameterError as error:
             raise UndefinedParameterError(str(error))
 
@@ -128,7 +134,8 @@ class Connection:
         """
         compiled_query, args = self._compile(query, values)
         try:
-            return await self._connection.fetchval(compiled_query, *args)
+            async with self._lock:
+                return await self._connection.fetchval(compiled_query, *args)
         except asyncpg.exceptions.UndefinedParameterError as error:
             raise UndefinedParameterError(str(error))
 
@@ -147,8 +154,9 @@ class Connection:
         compiled_query, args = self._compile(query, values)
         async with self._connection.transaction():
             try:
-                async for record in self._connection.cursor(compiled_query, *args):
-                    yield record
+                async with self._lock:
+                    async for record in self._connection.cursor(compiled_query, *args):
+                        yield record
             except asyncpg.exceptions.UndefinedParameterError as error:
                 raise UndefinedParameterError(str(error))
 
