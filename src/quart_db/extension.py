@@ -2,7 +2,7 @@ import asyncio
 import json
 from collections import defaultdict
 from contextlib import asynccontextmanager
-from typing import Any, Callable, Dict, List, Optional, Tuple, Type, Union
+from typing import Any, AsyncIterator, Callable, Dict, List, Optional, Tuple, Type, Union
 
 import asyncpg
 from quart import Quart
@@ -14,6 +14,49 @@ ValuesType = Union[Dict[str, Any], List[Any], None]
 
 
 class QuartDB:
+    """A QuartDB database instance from which connections can be acquired.
+
+    This can be used to initialise Quart-Schema documentation a given
+    app, either directly,
+
+    .. code-block:: python
+
+        app = Quart(__name__)
+        quart_db = QuartDB(app)
+
+    or via the factory pattern,
+
+    .. code-block:: python
+
+        quart_db = QuartDB()
+
+        def create_app():
+            app = Quart(__name__)
+            quart_db.init_app(app)
+            return app
+
+    It can then be used to establish connections to the database,
+
+    .. code-block:: python
+
+        async with quart_db.connection() as connection:
+            await connection.execute("SELECT 1")
+
+    Arguments:
+
+        app: The app to associate this instance with, can be None if
+             using the factory pattern.
+        url: The URL to use to connect to the database, can be None
+             and QUART_DB_DATABASE_URL used instead.
+        migrations_folder: Location of migrations relative to the
+             app's root path, defaults to "migrations".
+        data_path: Location of any initial data relative to the apps'
+             root path. Can be None.
+
+    Attributes:
+        connection_class: The type of object to use for connections.
+    """
+
     connection_class: Type[Connection] = Connection
 
     def __init__(
@@ -94,16 +137,46 @@ class QuartDB:
             self._pool = await asyncpg.create_pool(dsn=self._url, init=init)
 
     @asynccontextmanager
-    async def connection(self) -> Any:
+    async def connection(self) -> AsyncIterator[Connection]:
+        """Acquire a connection to the database.
+
+        This should be used in an async with block as so,
+
+        .. code-block:: python
+
+            async with quart_db.connection() as connection:
+                await connection.execute("SELECT 1")
+
+        """
         conn = await self.acquire()
         yield conn
         await self.release(conn)
 
     async def acquire(self) -> "Connection":
+        """Acquire a connection to the database.
+
+        Don't forget to release it after usage,
+
+        .. code-block::: python
+
+            connection = await quart_db.acquire()
+            await connection.execute("SELECT 1")
+            await quart_db.release(connection)
+        """
         connection = await self._pool.acquire()
         return self.connection_class(connection)
 
     async def release(self, connection: "Connection") -> None:
+        """Release a connection to the database.
+
+        This should be used with :meth:`acquire`,
+
+        .. code-block::: python
+
+            connection = await quart_db.acquire()
+            await connection.execute("SELECT 1")
+            await quart_db.release(connection)
+        """
         await self._pool.release(connection._connection)
 
     def set_converter(
@@ -114,4 +187,17 @@ class QuartDB:
         *,
         schema: str = "public",
     ) -> None:
+        """Set the type converter
+
+        This allows postgres and python types to be converted between
+        one another.
+
+        Arguments:
+            typename: The postgres name for the type.
+            encoder: A callable that takes the Python type and encodes it
+                into data postgres understands.
+            decoder: A callable that takes the postgres data and decodes
+                it into a Python type.
+            schema: Optional schema, defaults to "public".
+        """
         self._type_converters[schema][typename] = (encoder, decoder)
