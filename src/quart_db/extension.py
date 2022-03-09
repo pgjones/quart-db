@@ -43,7 +43,6 @@ class QuartDB:
             await connection.execute("SELECT 1")
 
     Arguments:
-
         app: The app to associate this instance with, can be None if
              using the factory pattern.
         url: The URL to use to connect to the database, can be None
@@ -52,9 +51,6 @@ class QuartDB:
              app's root path, defaults to "migrations".
         data_path: Location of any initial data relative to the apps'
              root path. Can be None.
-
-    Attributes:
-        connection_class: The type of object to use for connections.
     """
 
     connection_class: Type[Connection] = Connection
