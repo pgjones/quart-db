@@ -23,13 +23,13 @@ If you are,
  * new to Quart then try the `Quart documentation
    <https://pgjones.gitlab.io/quart/>`_,
 
-Quart-DB is developed on `GitLab
-<https://gitlab.com/pgjones/quart-db>`_. If you come across an issue,
+Quart-DB is developed on `GitHub
+<https://github.com/pgjones/quart-db>`_. If you come across an issue,
 or have a feature request please open an `issue
-<https://gitlab.com/pgjones/quart-db/issues>`_.If you want to
+<https://github.com/pgjones/quart-db/issues>`_.If you want to
 contribute a fix or the feature-implementation please do (typo fixes
 welcome), by proposing a `merge request
-<https://gitlab.com/pgjones/quart-db/merge_requests>`_. If you want to
+<https://github.com/pgjones/quart-db/merge_requests>`_. If you want to
 ask for help try `on gitter <https://gitter.im/python-quart/lobby>`_.
 
 Tutorials

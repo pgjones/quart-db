@@ -42,13 +42,13 @@ binds.
 Contributing
 ------------
 
-Quart-DB is developed on `GitLab
-<https://gitlab.com/pgjones/quart-db>`_. If you come across an issue,
+Quart-DB is developed on `GitHub
+<https://github.com/pgjones/quart-db>`_. If you come across an issue,
 or have a feature request please open an `issue
-<https://gitlab.com/pgjones/quart-db/issues>`_. If you want to
+<https://github.com/pgjones/quart-db/issues>`_. If you want to
 contribute a fix or the feature-implementation please do (typo fixes
 welcome), by proposing a `merge request
-<https://gitlab.com/pgjones/quart-db/merge_requests>`_.
+<https://github.com/pgjones/quart-db/merge_requests>`_.
 
 Testing
 ~~~~~~~
@@ -67,19 +67,19 @@ Help
 ----
 
 The Quart-DB `documentation
-<https://pgjones.gitlab.io/quart-db/>`_ is the best places to
+<https://quart-db.readthedocs.io/en/latest/>`_ is the best places to
 start, after that try searching `stack overflow
 <https://stackoverflow.com/questions/tagged/quart>`_ or ask for help
 `on gitter <https://gitter.im/python-quart/lobby>`_. If you still
 can't find an answer please `open an issue
-<https://gitlab.com/pgjones/quart-db/issues>`_.
+<https://github.com/pgjones/quart-db/issues>`_.
 
 
-.. |Build Status| image:: https://gitlab.com/pgjones/quart-db/badges/main/pipeline.svg
-   :target: https://gitlab.com/pgjones/quart-db/commits/main
+.. |Build Status| image:: https://github.com/pgjones/quart-db/actions/workflows/ci.yml/badge.svg
+   :target: https://github.com/pgjones/quart-db/commits/main
 
-.. |docs| image:: https://img.shields.io/badge/docs-passing-brightgreen.svg
-   :target: https://pgjones.gitlab.io/quart-db/
+.. |docs| image:: https://readthedocs.org/projects/quart-db/badge/?version=latest&style=flat
+   :target: https://quart-db.readthedocs.io/en/latest/
 
 .. |pypi| image:: https://img.shields.io/pypi/v/quart-db.svg
    :target: https://pypi.python.org/pypi/Quart-DB/
@@ -88,4 +88,4 @@ can't find an answer please `open an issue
    :target: https://pypi.python.org/pypi/Quart-DB/
 
 .. |license| image:: https://img.shields.io/badge/license-MIT-blue.svg
-   :target: https://gitlab.com/pgjones/quart-db/blob/main/LICENSE
+   :target: https://github.com/pgjones/quart-db/blob/main/LICENSE

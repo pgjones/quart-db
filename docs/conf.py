@@ -53,14 +53,14 @@ html_theme = "pydata_sphinx_theme"
 
 html_theme_options = {
     "external_links": [
-        {"name": "Source code", "url": "https://gitlab.com/pgjones/quart-db"},
-        {"name": "Issues", "url": "https://gitlab.com/pgjones/quart-db/issues"},
+        {"name": "Source code", "url": "https://github.com/pgjones/quart-db"},
+        {"name": "Issues", "url": "https://github.com/pgjones/quart-db/issues"},
     ],
     "icon_links": [
         {
-            "name": "GitLab",
-            "url": "https://gitlab.com/pgjones/quart-db",
-            "icon": "fab fa-gitlab",
+            "name": "Github",
+            "url": "https://github.com/pgjones/quart-db",
+            "icon": "fab fa-github",
         },
     ],
 }
