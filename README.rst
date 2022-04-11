@@ -18,7 +18,7 @@ and then utilising the ``g.connection`` connection,
     from quart_db import QuartDB
 
     app = Quart(__name__)
-    db = QuartDB(app, url="postgresql://user:pass@localhost:5432/db_name"))
+    db = QuartDB(app, url="postgresql://user:pass@localhost:5432/db_name")
 
     @app.get("/<int:id>")
     async def get_count(id: int):
