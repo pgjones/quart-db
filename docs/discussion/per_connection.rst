@@ -1,34 +1,15 @@
-Why not a connection per request?
-=================================
+Why a connection per request?
+=============================
 
-Quart-DB does not automatically provide a connection per request as
-each connection is taken from a pool and hence the request could
-potentially block until a connection in the pool is available. This
-would limit the concurrency to the pool size.
+Quart-DB automatically provides a connection per request from the pool
+even if the connection is never used. This means that the request
+request could potentially block until a connection in the pool is
+available and hence limits the concurrency to the pool size.
 
-In general Quart-DB attempts to be explicit about connection usage as
-this should make the code easier to reason about and less likely to
-introduce side affects.
+This decision is made on basis that most uses of QuartDB will gain
+from the conveniance of using ``g.connection`` as the usage is for a
+single database with most/all routes using a connection.
 
-Snippet for adding a connection to g
-------------------------------------
-
-The following can be used to provide a per request connection on
-``g``,
-
-.. code-block:: python
-
-    from quart import g
-
-    @app.before_request
-    @app.before_websocket
-    async def acquire_connection():
-        g.connection = await db.acquire()
-
-    @app.after_request
-    @app.after_websocket
-    async def release_connection(response):
-        if getattr(g, "connection", None) is not None:
-            await db.release(g.connection)
-        g.connection = None
-        return response
+This can be disabled as desired by setting the
+``auto_request_connection`` constructor argument to False or setting
+the ``QUART_DB_AUTO_REQUEST_CONNECTION`` configuration value to False.

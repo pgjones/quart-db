@@ -5,7 +5,7 @@ from contextlib import asynccontextmanager
 from typing import Any, AsyncIterator, Callable, Dict, List, Optional, Tuple, Type, Union
 
 import asyncpg
-from quart import Quart
+from quart import g, Quart, Response
 
 from ._migration import setup_schema
 from .connection import Connection
@@ -51,6 +51,8 @@ class QuartDB:
              app's root path, defaults to "migrations".
         data_path: Location of any initial data relative to the apps'
              root path. Can be None.
+        auto_request_connection: If True (the default) a connection
+             is acquired and placed on g for each request.
     """
 
     connection_class: Type[Connection] = Connection
@@ -62,6 +64,7 @@ class QuartDB:
         url: Optional[str] = None,
         migrations_folder: Optional[str] = "migrations",
         data_path: Optional[str] = None,
+        auto_request_connection: bool = True,
     ) -> None:
         self._close_timeout = 5  # Seconds
         self._url = url
@@ -75,6 +78,7 @@ class QuartDB:
         )
         self._migrations_folder = migrations_folder
         self._data_path = data_path
+        self._auto_request_connection = auto_request_connection
         if app is not None:
             self.init_app(app)
 
@@ -90,6 +94,10 @@ class QuartDB:
         app.before_serving(self.before_serving)
         app.after_serving(self.after_serving)
 
+        if app.config.get("QUART_DB_AUTO_REQUEST_CONNECTION", self._auto_request_connection):
+            app.before_request(self.before_request)
+            app.after_request(self.after_request)
+
     async def before_serving(self) -> None:
         if self._migrations_folder is not None or self._data_path is not None:
             await self.migrate()
@@ -98,6 +106,15 @@ class QuartDB:
     async def after_serving(self) -> None:
         await asyncio.wait_for(self._pool.close(), self._close_timeout)
         self._pool = None
+
+    async def before_request(self) -> None:
+        g.connection = await self.acquire()
+
+    async def after_request(self, response: Response) -> Response:
+        if getattr(g, "connection", None) is not None:
+            await self.release(g.connection)
+        g.connection = None
+        return response
 
     async def migrate(self) -> None:
         asyncpg_connection = await asyncpg.connect(dsn=self._url)

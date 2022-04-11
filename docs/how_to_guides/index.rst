@@ -9,5 +9,6 @@ How to guides
    configuration.rst
    development_data.rst
    migrations.rst
+   multiple_dbs.rst
    testing.rst
    type_conversion.rst

@@ -9,11 +9,12 @@ postgresql database(s).
 Quickstart
 ----------
 
-Quart-DB is used by associating it with an app and a DB (via a URL),
+Quart-DB is used by associating it with an app and a DB (via a URL)
+and then utilising the ``g.connection`` connection,
 
 .. code-block:: python
 
-    from quart import Quart, websocket
+    from quart import g, Quart, websocket
     from quart_db import QuartDB
 
     app = Quart(__name__)
@@ -21,20 +22,23 @@ Quart-DB is used by associating it with an app and a DB (via a URL),
 
     @app.get("/<int:id>")
     async def get_count(id: int):
-        async with db.connection() as connection:
-            result = await connection.fetch_val(
-                "SELECT COUNT(*) FROM tbl WHERE id = :id",
-                {"id": id},
-            )
+        result = await g.connection.fetch_val(
+            "SELECT COUNT(*) FROM tbl WHERE id = :id",
+            {"id": id},
+        )
         return {"count": result}
 
     @app.post("/")
     async def set_with_transaction():
-        async with db.connection() as connection:
-            async with connection.transaction():
-                await db.execute("UPDATE tbl SET done = $1", [True])
-                ...
+        async with g.connection.transaction():
+            await db.execute("UPDATE tbl SET done = $1", [True])
+            ...
         return {}
+
+   @app.get("/explicit")
+   async def explicit_usage():
+        async with db.connection() as connection:
+            ...
 
 Parameters can be defined via positional ``$1`` or keyword ``:id``
 binds.
