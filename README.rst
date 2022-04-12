@@ -14,26 +14,26 @@ and then utilising the ``g.connection`` connection,
 
 .. code-block:: python
 
-    from quart import g, Quart, websocket
-    from quart_db import QuartDB
+   from quart import g, Quart, websocket
+   from quart_db import QuartDB
 
-    app = Quart(__name__)
-    db = QuartDB(app, url="postgresql://user:pass@localhost:5432/db_name")
+   app = Quart(__name__)
+   db = QuartDB(app, url="postgresql://user:pass@localhost:5432/db_name")
 
-    @app.get("/<int:id>")
-    async def get_count(id: int):
-        result = await g.connection.fetch_val(
-            "SELECT COUNT(*) FROM tbl WHERE id = :id",
-            {"id": id},
-        )
-        return {"count": result}
+   @app.get("/<int:id>")
+   async def get_count(id: int):
+       result = await g.connection.fetch_val(
+           "SELECT COUNT(*) FROM tbl WHERE id = :id",
+           {"id": id},
+       )
+       return {"count": result}
 
-    @app.post("/")
-    async def set_with_transaction():
-        async with g.connection.transaction():
-            await db.execute("UPDATE tbl SET done = $1", [True])
-            ...
-        return {}
+   @app.post("/")
+   async def set_with_transaction():
+       async with g.connection.transaction():
+           await db.execute("UPDATE tbl SET done = $1", [True])
+           ...
+       return {}
 
    @app.get("/explicit")
    async def explicit_usage():
