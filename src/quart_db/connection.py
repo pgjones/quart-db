@@ -152,13 +152,13 @@ class Connection:
 
         """
         compiled_query, args = self._compile(query, values)
-        async with self._connection.transaction():
-            try:
-                async with self._lock:
+        async with self._lock:
+            async with self._connection.transaction():
+                try:
                     async for record in self._connection.cursor(compiled_query, *args):
                         yield record
-            except asyncpg.exceptions.UndefinedParameterError as error:
-                raise UndefinedParameterError(str(error))
+                except asyncpg.exceptions.UndefinedParameterError as error:
+                    raise UndefinedParameterError(str(error))
 
     def transaction(self, *, force_rollback: bool = False) -> "Transaction":
         """Open a transaction
