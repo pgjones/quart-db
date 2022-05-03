@@ -29,16 +29,19 @@ class Transaction:
             await self.commit()
 
     async def start(self) -> None:
-        self._transaction = self._connection._connection.transaction()
-        await self._transaction.start()
+        async with self._connection._lock:
+            self._transaction = self._connection._connection.transaction()
+            await self._transaction.start()
 
     async def commit(self) -> None:
-        await self._transaction.commit()
-        self._transaction = None
+        async with self._connection._lock:
+            await self._transaction.commit()
+            self._transaction = None
 
     async def rollback(self) -> None:
-        await self._transaction.rollback()
-        self._transaction = None
+        async with self._connection._lock:
+            await self._transaction.rollback()
+            self._transaction = None
 
 
 class Connection:
