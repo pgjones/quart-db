@@ -1,3 +1,10 @@
+0.3.0 2022-08-23
+----------------
+
+* Require the connection lock earlier in iterate.
+* Acquire the connection lock on Transaction.
+* Add a db-schema command to output the entity relation diagram.
+
 0.2.0 2022-04-12
 ----------------
 
