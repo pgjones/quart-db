@@ -5,7 +5,9 @@ from contextlib import asynccontextmanager
 from typing import Any, AsyncIterator, Callable, Dict, List, Optional, Tuple, Type, Union
 
 import asyncpg
+import click
 from quart import g, Quart, Response
+from quart.cli import pass_script_info, ScriptInfo
 
 from ._migration import setup_schema
 from .connection import Connection
@@ -97,6 +99,8 @@ class QuartDB:
         if app.config.get("QUART_DB_AUTO_REQUEST_CONNECTION", self._auto_request_connection):
             app.before_request(self.before_request)
             app.after_request(self.after_request)
+
+        app.cli.add_command(_schema_command)
 
     async def before_serving(self) -> None:
         if self._migrations_folder is not None or self._data_path is not None:
@@ -214,3 +218,23 @@ class QuartDB:
             schema: Optional schema, defaults to "public".
         """
         self._type_converters[schema][typename] = (encoder, decoder)
+
+
+@click.command("db-schema")
+@click.option(
+    "--output",
+    "-o",
+    default="quart_db_schema.png",
+    type=click.Path(),
+    help="Output the schema diagram to a file given by a path.",
+)
+@pass_script_info
+def _schema_command(info: ScriptInfo, output: Optional[str]) -> None:
+    app = info.load_app()
+
+    try:
+        from eralchemy2 import render_er  # type: ignore
+    except ImportError:
+        click.echo("Quart-DB needs to be installed with the erdiagram extra")
+    else:
+        render_er(app.config["QUART_DB_DATABASE_URL"], output, exclude_tables=["schema_migration"])
