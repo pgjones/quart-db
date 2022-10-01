@@ -6,16 +6,19 @@ Quart-DB
 ========
 
 Quart-DB is a `Quart <https://gitlab.com/pgjones/quart>`_ extension
-that provides managed connection(s) to postgresql database(s). Using
-Quart-DB you can,
+that provides managed connection(s) to postgresql or sqlite
+database(s). Using Quart-DB you can,
 
- * connect to Postgresql databases,
+ * connect to Postgresql or SQLite databases,
  * on top of everything Quart can do.
 
-Quart-DB uses `asyncpg <https://github.com/MagicStack/asyncpg>`_ to
-connect to the databse and `buildpg
+Quart-DB when connecting to PostgresQL databases uses `asyncpg
+<https://github.com/MagicStack/asyncpg>`_ with `buildpg
 <https://github.com/samuelcolvin/buildpg>`_ to allow for named bind
 parameters.
+
+Quart-DB uses `aiosqlite <https://github.com/omnilib/aiosqlite>`_ to
+connect to SQLite databases.
 
 If you are,
 

@@ -1,13 +1,11 @@
-import os
-
 from quart import g, Quart, ResponseReturnValue
 
 from quart_db import QuartDB
 
 
-async def test_extension() -> None:
+async def test_extension(url: str) -> None:
     app = Quart(__name__)
-    QuartDB(app, auto_request_connection=True, url=os.environ["DATABASE_URL"])
+    QuartDB(app, auto_request_connection=True, url=url)
 
     @app.get("/")
     async def index() -> ResponseReturnValue:

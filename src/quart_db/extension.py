@@ -1,18 +1,14 @@
-import asyncio
-import json
 from collections import defaultdict
 from contextlib import asynccontextmanager
-from typing import Any, AsyncIterator, Callable, Dict, List, Optional, Tuple, Type, Union
+from typing import AsyncIterator, Callable, Optional, Type
+from urllib.parse import urlsplit
 
-import asyncpg
 import click
 from quart import g, Quart, Response
 from quart.cli import pass_script_info, ScriptInfo
 
 from ._migration import setup_schema
-from .connection import Connection
-
-ValuesType = Union[Dict[str, Any], List[Any], None]
+from .interfaces import BackendABC, ConnectionABC, TypeConverters
 
 
 class QuartDB:
@@ -57,8 +53,6 @@ class QuartDB:
              is acquired and placed on g for each request.
     """
 
-    connection_class: Type[Connection] = Connection
-
     def __init__(
         self,
         app: Optional[Quart] = None,
@@ -70,14 +64,8 @@ class QuartDB:
     ) -> None:
         self._close_timeout = 5  # Seconds
         self._url = url
-        self._pool: Optional[asyncpg.Pool] = None
-        self._type_converters: Dict[str, Dict[str, Tuple[Callable, Callable]]] = defaultdict(
-            dict,
-            pg_catalog={
-                "json": (json.dumps, json.loads),
-                "jsonb": (json.dumps, json.loads),
-            },
-        )
+        self._backend: Optional[BackendABC] = None
+        self._type_converters: TypeConverters = defaultdict(dict)
         self._migrations_folder = migrations_folder
         self._data_path = data_path
         self._auto_request_connection = auto_request_connection
@@ -102,14 +90,15 @@ class QuartDB:
 
         app.cli.add_command(_schema_command)
 
+        self._backend = self._create_backend()
+
     async def before_serving(self) -> None:
         if self._migrations_folder is not None or self._data_path is not None:
             await self.migrate()
-        await self.connect()
+        await self._backend.connect()
 
     async def after_serving(self) -> None:
-        await asyncio.wait_for(self._pool.close(), self._close_timeout)
-        self._pool = None
+        await self._backend.disconnect(self._close_timeout)
 
     async def before_request(self) -> None:
         g.connection = await self.acquire()
@@ -121,15 +110,7 @@ class QuartDB:
         return response
 
     async def migrate(self) -> None:
-        asyncpg_connection = await asyncpg.connect(dsn=self._url)
-        await asyncpg_connection.set_type_codec(
-            "json", encoder=json.dumps, decoder=json.loads, schema="pg_catalog"
-        )
-        await asyncpg_connection.set_type_codec(
-            "jsonb", encoder=json.dumps, decoder=json.loads, schema="pg_catalog"
-        )
-        connection = Connection(asyncpg_connection)
-
+        connection = await self._backend._acquire_migration_connection()
         migrations_folder = None
         if self._migrations_folder is not None:
             migrations_folder = self._root_path / self._migrations_folder
@@ -137,24 +118,10 @@ class QuartDB:
         if self._data_path is not None:
             data_path = self._root_path / self._data_path
         await setup_schema(connection, migrations_folder, data_path)
-        await asyncpg_connection.close()
-
-    async def connect(self) -> None:
-        async def init(connection: asyncpg.Connection) -> None:
-            for schema, converters in self._type_converters.items():
-                for typename, converter in converters.items():
-                    await connection.set_type_codec(
-                        typename,
-                        encoder=converter[0],
-                        decoder=converter[1],
-                        schema=schema,
-                    )
-
-        if self._pool is None:
-            self._pool = await asyncpg.create_pool(dsn=self._url, init=init)
+        await self._backend._release_migration_connection(connection)
 
     @asynccontextmanager
-    async def connection(self) -> AsyncIterator[Connection]:
+    async def connection(self) -> AsyncIterator[ConnectionABC]:
         """Acquire a connection to the database.
 
         This should be used in an async with block as so,
@@ -169,7 +136,7 @@ class QuartDB:
         yield conn
         await self.release(conn)
 
-    async def acquire(self) -> "Connection":
+    async def acquire(self) -> ConnectionABC:
         """Acquire a connection to the database.
 
         Don't forget to release it after usage,
@@ -180,10 +147,9 @@ class QuartDB:
             await connection.execute("SELECT 1")
             await quart_db.release(connection)
         """
-        connection = await self._pool.acquire()
-        return self.connection_class(connection)
+        return await self._backend.acquire()
 
-    async def release(self, connection: "Connection") -> None:
+    async def release(self, connection: ConnectionABC) -> None:
         """Release a connection to the database.
 
         This should be used with :meth:`acquire`,
@@ -194,7 +160,7 @@ class QuartDB:
             await connection.execute("SELECT 1")
             await quart_db.release(connection)
         """
-        await self._pool.release(connection._connection)
+        await self._backend.release(connection)
 
     def set_converter(
         self,
@@ -202,6 +168,7 @@ class QuartDB:
         encoder: Callable,
         decoder: Callable,
         *,
+        pytype: Optional[Type] = None,
         schema: str = "public",
     ) -> None:
         """Set the type converter
@@ -215,9 +182,23 @@ class QuartDB:
                 into data postgres understands.
             decoder: A callable that takes the postgres data and decodes
                 it into a Python type.
-            schema: Optional schema, defaults to "public".
+            pytype: Optional Python type, required for SQLite.
+            schema: Optional Postgres schema, defaults to "public".
         """
-        self._type_converters[schema][typename] = (encoder, decoder)
+        self._type_converters[schema][typename] = (encoder, decoder, pytype)
+
+    def _create_backend(self) -> BackendABC:
+        scheme, *_ = urlsplit(self._url)
+        if scheme == "postgresql":
+            from .backends.asyncpg import Backend
+
+            return Backend(self._url, self._type_converters)
+        elif scheme == "sqlite":
+            from .backends.aiosqlite import Backend  # type: ignore
+
+            return Backend(self._url, self._type_converters)
+        else:
+            raise ValueError(f"{scheme} is not a supported backend")
 
 
 @click.command("db-schema")

@@ -4,7 +4,7 @@ Quart-DB
 |Build Status| |docs| |pypi| |python| |license|
 
 Quart-DB is a Quart extension that provides managed connection(s) to
-postgresql database(s).
+postgresql or sqlite database(s).
 
 Quickstart
 ----------

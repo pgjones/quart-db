@@ -24,8 +24,7 @@ environment variable,
 
     @pytest.fixture(name="connection")
     async def _connection():
-        asyncpg_connection = await asyncpg.connect(os.environ["DATABASE_URL"])
+        db = QuartDB(Quart(__name__), url=os.environ["DATABASE_URL"])
         connection = Connection(asyncpg_connection)
-        async with connection.transaction(force_rollback=True):
+        async with db.connection() as connection:
             yield connection
-        await asyncpg_connection.close()

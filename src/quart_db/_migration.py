@@ -2,7 +2,7 @@ import importlib.util
 from pathlib import Path
 from typing import Optional
 
-from .connection import Connection
+from .interfaces import ConnectionABC
 
 
 class MigrationFailedError(Exception):
@@ -10,14 +10,16 @@ class MigrationFailedError(Exception):
 
 
 async def setup_schema(
-    connection: Connection, migrations_path: Optional[Path], data_file: Optional[Path]
+    connection: ConnectionABC, migrations_path: Optional[Path], data_file: Optional[Path]
 ) -> None:
     await _create_migration_table(connection)
+
+    for_update = "FOR UPDATE" if connection.supports_for_update else ""
 
     while migrations_path is not None:
         async with connection.transaction():
             migration = await connection.fetch_val(
-                "SELECT version FROM schema_migration FOR UPDATE"
+                f"SELECT version FROM schema_migration {for_update}"
             )
             migration += 1
             try:
@@ -35,7 +37,7 @@ async def setup_schema(
 
     async with connection.transaction():
         data_loaded = await connection.fetch_val(
-            "SELECT data_loaded FROM schema_migration FOR UPDATE"
+            f"SELECT data_loaded FROM schema_migration {for_update}"
         )
         if not data_loaded and data_file is not None:
             try:
@@ -46,7 +48,7 @@ async def setup_schema(
                 await connection.execute("UPDATE schema_migration SET data_loaded = TRUE")
 
 
-async def _create_migration_table(connection: Connection) -> None:
+async def _create_migration_table(connection: ConnectionABC) -> None:
     await connection.execute(
         """CREATE TABLE IF NOT EXISTS schema_migration (
                onerow_id BOOL PRIMARY KEY DEFAULT TRUE,
@@ -63,7 +65,7 @@ async def _create_migration_table(connection: Connection) -> None:
     )
 
 
-async def _run_migration(connection: Connection, migration: int, migrations_path: Path) -> None:
+async def _run_migration(connection: ConnectionABC, migration: int, migrations_path: Path) -> None:
     spec = importlib.util.spec_from_file_location(
         f"quart_db_{migration}", migrations_path / f"{migration}.py"
     )
@@ -75,7 +77,7 @@ async def _run_migration(connection: Connection, migration: int, migrations_path
         raise MigrationFailedError(f"Migration {migration} is not valid")
 
 
-async def _run_data(connection: Connection, path: Path) -> None:
+async def _run_data(connection: ConnectionABC, path: Path) -> None:
     spec = importlib.util.spec_from_file_location("quart_db_data", path)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)

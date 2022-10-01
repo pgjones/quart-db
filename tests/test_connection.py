@@ -35,10 +35,16 @@ async def test_iterate(connection: Connection) -> None:
         "INSERT INTO tbl (data) VALUES (:data)",
         [{"data": 2}, {"data": 3}],
     )
-    assert [2, 3] == [result["data"] async for result in connection.iterate("SELECT data FROM tbl")]
+    assert [2, 3] == [
+        result["data"]
+        async for result in connection.iterate("SELECT data FROM tbl")  # type: ignore
+    ]
 
 
 async def test_transaction(connection: Connection) -> None:
+    # if not isinstance(connection, AsyncPGConnection):
+    #    pytest.skip()
+
     async with connection.transaction():
         await connection.execute("SELECT 1")
 
@@ -56,9 +62,5 @@ async def test_transaction_rollback(connection: Connection) -> None:
 
 async def test_missing_bind(connection: Connection) -> None:
     with pytest.raises(UndefinedParameterError) as exc:
-        await connection.execute("SELECT * FROM tbl WHERE id = :id")
+        await connection.execute("SELECT * FROM tbl WHERE id = :id", {"a": 2})
     assert "id" in str(exc.value)
-
-    with pytest.raises(UndefinedParameterError) as exc:
-        await connection.execute("SELECT * FROM tbl WHERE id = $1")
-    assert "$1" in str(exc.value)

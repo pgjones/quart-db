@@ -25,3 +25,12 @@ relative to the app's root path.
 
 ``QUART_DB_AUTO_REQUEST_CONNECTION`` can be used to disable (when
 False) the automatic ``g.connection`` connection per request.
+
+
+SQLite configuration
+--------------------
+
+To use a relative path ``QUART_DB_DATABASE_URL`` should start with
+``sqlite:///``, whereas for an absolute path it should start with
+``sqlite:////``. In memory usage should be avoided as changes will not
+be persisted.
