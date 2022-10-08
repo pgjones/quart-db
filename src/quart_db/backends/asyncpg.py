@@ -15,6 +15,13 @@ from ..interfaces import (
     UndefinedParameterError,
 )
 
+DEFAULT_TYPE_CONVERTERS = {
+    "pg_catalog": {
+        "json": (json.dumps, json.loads, None),
+        "jsonb": (json.dumps, json.loads, None),
+    }
+}
+
 
 class Transaction(TransactionABC):
     def __init__(self, connection: "Connection", *, force_rollback: bool = False) -> None:
@@ -145,9 +152,7 @@ class Backend(BackendABC):
     def __init__(self, url: str, type_converters: TypeConverters) -> None:
         self._pool: Optional[asyncpg.Pool] = None
         self._url = url
-        self._type_converters = type_converters
-        self._type_converters["pg_catalog"].setdefault("json", (json.dumps, json.loads, None))
-        self._type_converters["pg_catalog"].setdefault("jsonb", (json.dumps, json.loads, None))
+        self._type_converters = {**DEFAULT_TYPE_CONVERTERS, **type_converters}  # type: ignore
 
     async def connect(self) -> None:
         if self._pool is None:
@@ -164,25 +169,51 @@ class Backend(BackendABC):
     async def release(self, connection: Connection) -> None:  # type: ignore[override]
         await self._pool.release(connection._connection)
 
-    async def _init(self, connection: asyncpg.Connection) -> None:
-        for schema, converters in self._type_converters.items():
-            for typename, (encoder, decoder, _) in converters.items():
-                await connection.set_type_codec(
-                    typename,
-                    encoder=encoder,
-                    decoder=decoder,
-                    schema=schema,
-                )
-
     async def _acquire_migration_connection(self) -> Connection:
         asyncpg_connection = await asyncpg.connect(dsn=self._url)
-        await asyncpg_connection.set_type_codec(
-            "json", encoder=json.dumps, decoder=json.loads, schema="pg_catalog"
-        )
-        await asyncpg_connection.set_type_codec(
-            "jsonb", encoder=json.dumps, decoder=json.loads, schema="pg_catalog"
-        )
+        await _init_connection(asyncpg_connection, DEFAULT_TYPE_CONVERTERS)  # type: ignore
         return Connection(asyncpg_connection)
 
     async def _release_migration_connection(self, connection: Connection) -> None:  # type: ignore[override]  # noqa: E501
         await connection._connection.close()
+
+    async def _init(self, connection: asyncpg.Connection) -> None:
+        await _init_connection(connection, self._type_converters)  # type: ignore
+
+
+class TestingBackend(BackendABC):
+    def __init__(self, url: str, type_converters: TypeConverters) -> None:
+        self._url = url
+        self._type_converters = {**DEFAULT_TYPE_CONVERTERS, **type_converters}  # type: ignore
+
+    async def connect(self) -> None:
+        self._connection = Connection(await asyncpg.connect(dsn=self._url))
+        await _init_connection(self._connection._connection, self._type_converters)  # type: ignore
+
+    async def disconnect(self, timeout: Optional[int] = None) -> None:
+        await asyncio.wait_for(self._connection._connection.close(), timeout)
+
+    async def acquire(self) -> Connection:
+        return self._connection
+
+    async def release(self, connection: Connection) -> None:  # type: ignore[override]
+        pass
+
+    async def _acquire_migration_connection(self) -> Connection:
+        asyncpg_connection = await asyncpg.connect(dsn=self._url)
+        await _init_connection(asyncpg_connection, DEFAULT_TYPE_CONVERTERS)  # type: ignore
+        return Connection(asyncpg_connection)
+
+    async def _release_migration_connection(self, connection: Connection) -> None:  # type: ignore[override]  # noqa: E501
+        await connection._connection.close()
+
+
+async def _init_connection(connection: asyncpg.Connection, type_converters: TypeConverters) -> None:
+    for schema, converters in type_converters.items():
+        for typename, (encoder, decoder, _) in converters.items():
+            await connection.set_type_codec(
+                typename,
+                encoder=encoder,
+                decoder=decoder,
+                schema=schema,
+            )

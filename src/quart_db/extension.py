@@ -96,9 +96,9 @@ class QuartDB:
 
         app.cli.add_command(_schema_command)
 
+    async def before_serving(self) -> None:
         self._backend = self._create_backend()
 
-    async def before_serving(self) -> None:
         if self._migrations_folder is not None or self._data_path is not None:
             await self.migrate()
         await self._backend.connect()
@@ -196,13 +196,19 @@ class QuartDB:
     def _create_backend(self) -> BackendABC:
         scheme, *_ = urlsplit(self._url)
         if scheme == "postgresql":
-            from .backends.asyncpg import Backend
+            from .backends.asyncpg import Backend, TestingBackend
 
-            return Backend(self._url, self._type_converters)
+            if self._testing:
+                return TestingBackend(self._url, self._type_converters)
+            else:
+                return Backend(self._url, self._type_converters)
         elif scheme == "sqlite":
-            from .backends.aiosqlite import Backend  # type: ignore
+            from .backends.aiosqlite import Backend, TestingBackend  # type: ignore
 
-            return Backend(self._url, self._type_converters)
+            if self._testing:
+                return TestingBackend(self._url, self._type_converters)
+            else:
+                return Backend(self._url, self._type_converters)
         else:
             raise ValueError(f"{scheme} is not a supported backend")
 

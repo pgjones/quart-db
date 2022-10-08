@@ -143,11 +143,7 @@ class Connection(ConnectionABC):
 
 
 class Backend(BackendABC):
-    def __init__(
-        self,
-        url: str,
-        type_converters: TypeConverters,
-    ) -> None:
+    def __init__(self, url: str, type_converters: TypeConverters) -> None:
         _, _, path, *_ = urlsplit(url)
         self._path = path[1:]
         self._connections: Set[aiosqlite.Connection] = set()
@@ -177,6 +173,46 @@ class Backend(BackendABC):
     async def release(self, connection: Connection) -> None:  # type: ignore[override]
         await connection._connection.__aexit__(None, None, None)
         self._connections.remove(connection._connection)
+
+    async def _acquire_migration_connection(self) -> Connection:
+        connection = aiosqlite.connect(
+            database=self._path,
+            isolation_level=None,
+        )
+        await connection.__aenter__()
+        connection.row_factory = aiosqlite.Row
+        return Connection(connection)
+
+    async def _release_migration_connection(self, connection: Connection) -> None:  # type: ignore[override]  # noqa: E501
+        await connection._connection.__aexit__(None, None, None)
+
+
+class TestingBackend(BackendABC):
+    def __init__(self, url: str, type_converters: TypeConverters) -> None:
+        _, _, path, *_ = urlsplit(url)
+        self._path = path[1:]
+        for _, converters in type_converters.items():
+            for typename, (encoder, decoder, pytype) in converters.items():
+                aiosqlite.register_adapter(pytype, encoder)
+                aiosqlite.register_converter(typename, decoder)
+
+    async def connect(self) -> None:
+        connection = aiosqlite.connect(
+            database=self._path,
+            isolation_level=None,
+            detect_types=PARSE_COLNAMES,
+        )
+        await connection.__aenter__()
+        self._connection = Connection(connection)
+
+    async def disconnect(self, timeout: Optional[int] = None) -> None:
+        await asyncio.wait_for(self._connection._connection.close(), timeout)
+
+    async def acquire(self) -> Connection:
+        return self._connection
+
+    async def release(self, connection: Connection) -> None:  # type: ignore[override]
+        pass
 
     async def _acquire_migration_connection(self) -> Connection:
         connection = aiosqlite.connect(
