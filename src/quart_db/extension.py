@@ -80,6 +80,12 @@ class QuartDB:
         if self._data_path is None:
             self._data_path = app.config.get("QUART_DB_DATA_PATH")
         self._root_path = app.root_path
+        self._testing = app.testing and app.config.get("QUART_DB_TESTING", None)
+
+        if app.config["PROPAGATE_EXCEPTIONS"] is None:
+            # Ensure exceptions aren't propagated so as to ensure
+            # connections are released.
+            app.config["PROPAGATE_EXCEPTIONS"] = False
 
         app.before_serving(self.before_serving)
         app.after_serving(self.after_serving)
