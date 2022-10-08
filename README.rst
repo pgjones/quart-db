@@ -31,7 +31,7 @@ and then utilising the ``g.connection`` connection,
    @app.post("/")
    async def set_with_transaction():
        async with g.connection.transaction():
-           await db.execute("UPDATE tbl SET done = $1", [True])
+           await db.execute("UPDATE tbl SET done = :done", {"done": True})
            ...
        return {}
 
@@ -39,9 +39,6 @@ and then utilising the ``g.connection`` connection,
    async def explicit_usage():
         async with db.connection() as connection:
             ...
-
-Parameters can be defined via positional ``$1`` or keyword ``:id``
-binds.
 
 Contributing
 ------------
