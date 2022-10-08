@@ -1,3 +1,10 @@
+0.4.0 2022-10-08
+----------------
+
+* Support SQLite databases.
+* Bugfix ensure that exceptions are not propagated, unless
+  specifically set. This prevents connection exhaustion on errors.
+
 0.3.0 2022-08-23
 ----------------
 
