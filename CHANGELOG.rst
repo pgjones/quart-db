@@ -1,3 +1,8 @@
+0.4.1 2022-10-09
+----------------
+
+* Bugfix add missing aiosqlite dependency
+
 0.4.0 2022-10-08
 ----------------
 
