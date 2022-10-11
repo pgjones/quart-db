@@ -119,7 +119,7 @@ class Connection(ConnectionABC):
         except asyncpg.exceptions.UndefinedParameterError as error:
             raise UndefinedParameterError(str(error))
 
-    async def iterate(  # type: ignore[override]
+    async def iterate(
         self,
         query: str,
         values: Optional[Dict[str, Any]] = None,

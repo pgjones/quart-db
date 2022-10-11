@@ -125,7 +125,7 @@ class Connection(ConnectionABC):
         else:
             return result[0]
 
-    async def iterate(  # type: ignore[override]
+    async def iterate(
         self,
         query: str,
         values: Optional[Dict[str, Any]] = None,

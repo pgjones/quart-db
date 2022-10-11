@@ -93,7 +93,7 @@ class ConnectionABC(ABC):
         pass
 
     @abstractmethod
-    async def iterate(
+    def iterate(
         self,
         query: str,
         values: Optional[Dict[str, Any]] = None,

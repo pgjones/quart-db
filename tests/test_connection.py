@@ -35,10 +35,7 @@ async def test_iterate(connection: Connection) -> None:
         "INSERT INTO tbl (data) VALUES (:data)",
         [{"data": 2}, {"data": 3}],
     )
-    assert [2, 3] == [
-        result["data"]
-        async for result in connection.iterate("SELECT data FROM tbl")  # type: ignore
-    ]
+    assert [2, 3] == [result["data"] async for result in connection.iterate("SELECT data FROM tbl")]
 
 
 async def test_transaction(connection: Connection) -> None:
