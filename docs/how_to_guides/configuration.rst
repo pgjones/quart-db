@@ -18,7 +18,8 @@ QUART_DB_AUTO_REQUEST_CONNECTION bool
 is ``None`` by default (set via constructor argument).
 
 ``QUART_DB_MIGRATIONS_FOLDER`` refers to the location of the
-migrations folder relative to the app's root path.
+migrations folder relative to the app's root path. You can set
+this to `None` in order to disable the migrations system.
 
 ``QUART_DB_DATA_PATH`` refers to the location of the data module
 relative to the app's root path.
