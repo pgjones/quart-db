@@ -159,7 +159,8 @@ class Backend(BackendABC):
             self._pool = await asyncpg.create_pool(dsn=self._url, init=self._init)
 
     async def disconnect(self, timeout: Optional[int] = None) -> None:
-        await asyncio.wait_for(self._pool.close(), timeout)
+        if self._pool is not None:
+            await asyncio.wait_for(self._pool.close(), timeout)
         self._pool = None
 
     async def acquire(self) -> Connection:
