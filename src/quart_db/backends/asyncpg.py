@@ -1,7 +1,7 @@
 import asyncio
 import json
 from types import TracebackType
-from typing import Any, AsyncGenerator, Dict, List, Optional, Tuple
+from typing import Any, AsyncGenerator, Callable, Dict, List, Optional, Tuple
 
 import asyncpg
 from buildpg import BuildError, render
@@ -149,14 +149,15 @@ class Connection(ConnectionABC):
 
 
 class Backend(BackendABC):
-    def __init__(self, url: str, type_converters: TypeConverters) -> None:
+    def __init__(self, url: str, type_converters: TypeConverters, password: str | Callable[[], str] | None = None) -> None:
         self._pool: Optional[asyncpg.Pool] = None
         self._url = url
         self._type_converters = {**DEFAULT_TYPE_CONVERTERS, **type_converters}  # type: ignore
+        self._password = password
 
     async def connect(self) -> None:
         if self._pool is None:
-            self._pool = await asyncpg.create_pool(dsn=self._url, init=self._init)
+            self._pool = await asyncpg.create_pool(dsn=self._url, init=self._init, password=self._password)
 
     async def disconnect(self, timeout: Optional[int] = None) -> None:
         if self._pool is not None:

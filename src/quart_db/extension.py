@@ -51,6 +51,12 @@ class QuartDB:
              root path. Can be None.
         auto_request_connection: If True (the default) a connection
              is acquired and placed on g for each request.
+        password: Optional password to be used for authentication, if
+             the server requires one.
+             Password may be either a string, or a callable that
+             returns a string. If a callable is provided, it will be
+             called each time a new connection is established.
+
     """
 
     def __init__(
@@ -61,6 +67,7 @@ class QuartDB:
         migrations_folder: Optional[str] = "migrations",
         data_path: Optional[str] = None,
         auto_request_connection: bool = True,
+        password: str | Callable[[], str] | None = None,
     ) -> None:
         self._close_timeout = 5  # Seconds
         self._url = url
@@ -69,6 +76,7 @@ class QuartDB:
         self._migrations_folder = migrations_folder
         self._data_path = data_path
         self._auto_request_connection = auto_request_connection
+        self._password = password
         if app is not None:
             self.init_app(app)
 
@@ -201,7 +209,7 @@ class QuartDB:
             if self._testing:
                 return TestingBackend(self._url, self._type_converters)
             else:
-                return Backend(self._url, self._type_converters)
+                return Backend(self._url, self._type_converters, self._password)
         elif scheme == "sqlite":
             from .backends.aiosqlite import Backend, TestingBackend  # type: ignore
 
