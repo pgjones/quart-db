@@ -148,7 +148,6 @@ class BackendABC(ABC):
 
     @abstractmethod
     async def acquire(self) -> ConnectionABC:
-
         """Acquire a connection to the database.
 
         Don't forget to release it after usage,
