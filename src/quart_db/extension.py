@@ -1,6 +1,6 @@
 from collections import defaultdict
 from contextlib import asynccontextmanager
-from typing import AsyncIterator, Callable, Optional, Type
+from typing import AsyncIterator, Callable, Optional, Type, Union
 from urllib.parse import urlsplit
 
 import click
@@ -67,7 +67,7 @@ class QuartDB:
         migrations_folder: Optional[str] = "migrations",
         data_path: Optional[str] = None,
         auto_request_connection: bool = True,
-        password: str | Callable[[], str] | None = None,
+        password: Union[str, Callable[[], str], None] = None,
     ) -> None:
         self._close_timeout = 5  # Seconds
         self._url = url
@@ -216,7 +216,7 @@ class QuartDB:
             if self._testing:
                 return TestingBackend(self._url, self._type_converters)
             else:
-                return Backend(self._url, self._type_converters)
+                return Backend(self._url, self._type_converters, self._password)
         else:
             raise ValueError(f"{scheme} is not a supported backend")
 

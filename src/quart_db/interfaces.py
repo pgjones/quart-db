@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from types import TracebackType
-from typing import Any, AsyncGenerator, Callable, Dict, List, Mapping, Optional, Tuple, Type
+from typing import Any, AsyncGenerator, Callable, Dict, List, Mapping, Optional, Tuple, Type, Union
 
 RecordType = Mapping[str, Any]
 TypeConverters = Dict[str, Dict[str, Tuple[Callable, Callable, Optional[Type]]]]
@@ -123,7 +123,12 @@ class ConnectionABC(ABC):
 
 class BackendABC(ABC):
     @abstractmethod
-    def __init__(self, url: str, type_converters: TypeConverters) -> None:
+    def __init__(
+        self,
+        url: str,
+        type_converters: TypeConverters,
+        password: Union[str, Callable[[], str], None],
+    ) -> None:
         pass
 
     @abstractmethod

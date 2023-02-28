@@ -1,7 +1,7 @@
 import asyncio
 from sqlite3 import PARSE_COLNAMES, ProgrammingError
 from types import TracebackType
-from typing import Any, AsyncGenerator, Dict, List, Optional, Set
+from typing import Any, AsyncGenerator, Callable, Dict, List, Optional, Set, Union
 from urllib.parse import urlsplit
 from uuid import uuid4
 
@@ -143,7 +143,13 @@ class Connection(ConnectionABC):
 
 
 class Backend(BackendABC):
-    def __init__(self, url: str, type_converters: TypeConverters) -> None:
+    def __init__(
+        self,
+        url: str,
+        type_converters: TypeConverters,
+        password: Union[str, Callable[[], str], None] = None,
+    ) -> None:
+        _ = password
         _, _, path, *_ = urlsplit(url)
         self._path = path[1:]
         self._connections: Set[aiosqlite.Connection] = set()
