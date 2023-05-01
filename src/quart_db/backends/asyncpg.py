@@ -149,14 +149,15 @@ class Connection(ConnectionABC):
 
 
 class Backend(BackendABC):
-    def __init__(self, url: str, type_converters: TypeConverters) -> None:
+    def __init__(self, url: str, options: Dict[str, Any], type_converters: TypeConverters) -> None:
         self._pool: Optional[asyncpg.Pool] = None
         self._url = url
+        self._options = options
         self._type_converters = {**DEFAULT_TYPE_CONVERTERS, **type_converters}  # type: ignore
 
     async def connect(self) -> None:
         if self._pool is None:
-            self._pool = await asyncpg.create_pool(dsn=self._url, init=self._init)
+            self._pool = await asyncpg.create_pool(dsn=self._url, init=self._init, **self._options)
 
     async def disconnect(self, timeout: Optional[int] = None) -> None:
         if self._pool is not None:
@@ -183,12 +184,13 @@ class Backend(BackendABC):
 
 
 class TestingBackend(BackendABC):
-    def __init__(self, url: str, type_converters: TypeConverters) -> None:
+    def __init__(self, url: str, options: Dict[str, Any], type_converters: TypeConverters) -> None:
         self._url = url
+        self._options = options
         self._type_converters = {**DEFAULT_TYPE_CONVERTERS, **type_converters}  # type: ignore
 
     async def connect(self) -> None:
-        self._connection = Connection(await asyncpg.connect(dsn=self._url))
+        self._connection = Connection(await asyncpg.connect(dsn=self._url, **self._options))
         await _init_connection(self._connection._connection, self._type_converters)  # type: ignore
 
     async def disconnect(self, timeout: Optional[int] = None) -> None:

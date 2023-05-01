@@ -123,7 +123,9 @@ class ConnectionABC(ABC):
 
 class BackendABC(ABC):
     @abstractmethod
-    def __init__(self, url: str, type_converters: TypeConverters) -> None:
+    def __init__(
+        self, url: str, options: Optional[Dict[str, Any]], type_converters: TypeConverters
+    ) -> None:
         pass
 
     @abstractmethod

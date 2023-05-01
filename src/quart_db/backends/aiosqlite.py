@@ -143,9 +143,10 @@ class Connection(ConnectionABC):
 
 
 class Backend(BackendABC):
-    def __init__(self, url: str, type_converters: TypeConverters) -> None:
+    def __init__(self, url: str, options: Dict[str, Any], type_converters: TypeConverters) -> None:
         _, _, path, *_ = urlsplit(url)
         self._path = path[1:]
+        self._options = options
         self._connections: Set[aiosqlite.Connection] = set()
         for _, converters in type_converters.items():
             for typename, (encoder, decoder, pytype) in converters.items():
@@ -164,6 +165,7 @@ class Backend(BackendABC):
             database=self._path,
             isolation_level=None,
             detect_types=PARSE_COLNAMES,
+            **self._options,
         )
         await connection.__aenter__()
         connection.row_factory = aiosqlite.Row
@@ -188,9 +190,10 @@ class Backend(BackendABC):
 
 
 class TestingBackend(BackendABC):
-    def __init__(self, url: str, type_converters: TypeConverters) -> None:
+    def __init__(self, url: str, options: Dict[str, Any], type_converters: TypeConverters) -> None:
         _, _, path, *_ = urlsplit(url)
         self._path = path[1:]
+        self._options = options
         for _, converters in type_converters.items():
             for typename, (encoder, decoder, pytype) in converters.items():
                 aiosqlite.register_adapter(pytype, encoder)
@@ -201,6 +204,7 @@ class TestingBackend(BackendABC):
             database=self._path,
             isolation_level=None,
             detect_types=PARSE_COLNAMES,
+            **self._options,
         )
         await connection.__aenter__()
         self._connection = Connection(connection)

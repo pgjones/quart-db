@@ -1,6 +1,6 @@
 from collections import defaultdict
 from contextlib import asynccontextmanager
-from typing import AsyncIterator, Callable, Optional, Type
+from typing import Any, AsyncIterator, Callable, Dict, Optional, Type
 from urllib.parse import urlsplit
 
 import click
@@ -51,6 +51,8 @@ class QuartDB:
              root path. Can be None.
         auto_request_connection: If True (the default) a connection
              is acquired and placed on g for each request.
+        backend_options: Options to pass directly to the backend
+             engines. Will depend on the backend used.
     """
 
     def __init__(
@@ -61,9 +63,13 @@ class QuartDB:
         migrations_folder: Optional[str] = "migrations",
         data_path: Optional[str] = None,
         auto_request_connection: bool = True,
+        backend_options: Optional[Dict[str, Any]] = None,
     ) -> None:
         self._close_timeout = 5  # Seconds
         self._url = url
+        self._backend_options = backend_options
+        if self._backend_options is None:
+            self._backend_options = {}
         self._backend: Optional[BackendABC] = None
         self._type_converters: TypeConverters = defaultdict(dict)
         self._migrations_folder = migrations_folder
@@ -199,16 +205,16 @@ class QuartDB:
             from .backends.asyncpg import Backend, TestingBackend
 
             if self._testing:
-                return TestingBackend(self._url, self._type_converters)
+                return TestingBackend(self._url, self._backend_options, self._type_converters)
             else:
-                return Backend(self._url, self._type_converters)
+                return Backend(self._url, self._backend_options, self._type_converters)
         elif scheme == "sqlite":
             from .backends.aiosqlite import Backend, TestingBackend  # type: ignore
 
             if self._testing:
-                return TestingBackend(self._url, self._type_converters)
+                return TestingBackend(self._url, self._backend_options, self._type_converters)
             else:
-                return Backend(self._url, self._type_converters)
+                return Backend(self._url, self._backend_options, self._type_converters)
         else:
             raise ValueError(f"{scheme} is not a supported backend")
 
