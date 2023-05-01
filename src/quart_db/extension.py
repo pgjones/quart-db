@@ -195,7 +195,7 @@ class QuartDB:
 
     def _create_backend(self) -> BackendABC:
         scheme, *_ = urlsplit(self._url)
-        if scheme == "postgresql":
+        if scheme in {"postgresql", "postgres"}:
             from .backends.asyncpg import Backend, TestingBackend
 
             if self._testing:
