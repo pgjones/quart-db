@@ -1,3 +1,12 @@
+0.5.0 2023-05-07
+----------------
+
+* Allow postgres as a valid URL scheme alongside postgresql.
+* Allow additional options to be passed to the backend db driver.
+* Add a db-migrate cli command.
+* Bugfix protocol typing for iterate method.
+* Bugfix avoid double-close if the pool has already been disconnected.
+
 0.4.1 2022-10-09
 ----------------
 
