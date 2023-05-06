@@ -38,3 +38,11 @@ Type conversion
 Custom type conversion is not possible in the migration scripts as the
 conversion code must be registered before the corresponding type is
 created in the migtration.
+
+Invocation
+----------
+
+The migrations are automatically invoked during the app
+startup. Alternatively it can be invoked via this command::
+
+  quart db-migrate

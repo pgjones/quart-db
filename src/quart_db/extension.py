@@ -1,3 +1,4 @@
+import asyncio
 from collections import defaultdict
 from contextlib import asynccontextmanager
 from typing import Any, AsyncIterator, Callable, Dict, Optional, Type
@@ -79,6 +80,8 @@ class QuartDB:
             self.init_app(app)
 
     def init_app(self, app: Quart) -> None:
+        app.extensions.setdefault("QUART_DB", []).append(self)
+
         if self._url is None:
             self._url = app.config["QUART_DB_DATABASE_URL"]
         if self._migrations_folder is None:
@@ -100,6 +103,7 @@ class QuartDB:
             app.before_request(self.before_request)
             app.after_request(self.after_request)
 
+        app.cli.add_command(_migrate_command)
         app.cli.add_command(_schema_command)
 
     async def before_serving(self) -> None:
@@ -237,3 +241,17 @@ def _schema_command(info: ScriptInfo, output: Optional[str]) -> None:
         click.echo("Quart-DB needs to be installed with the erdiagram extra")
     else:
         render_er(app.config["QUART_DB_DATABASE_URL"], output, exclude_tables=["schema_migration"])
+
+
+@click.command("db-migrate")
+@pass_script_info
+def _migrate_command(info: ScriptInfo) -> None:
+    app = info.load_app()
+
+    async def _inner() -> None:
+        for extension in app.extensions["QUART_DB"]:
+            extension._backend = extension._create_backend()
+            await extension.migrate()
+
+    asyncio.run(_inner())
+    click.echo("Quart-DB migration complete")
