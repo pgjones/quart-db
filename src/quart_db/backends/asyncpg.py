@@ -15,6 +15,11 @@ from ..interfaces import (
     UndefinedParameterError,
 )
 
+try:
+    from typing import LiteralString
+except ImportError:
+    from typing_extensions import LiteralString
+
 DEFAULT_TYPE_CONVERTERS = {
     "pg_catalog": {
         "json": (json.dumps, json.loads, None),
@@ -62,7 +67,7 @@ class Connection(ConnectionABC):
         self._connection = connection
         self._lock = asyncio.Lock()
 
-    async def execute(self, query: str, values: Optional[Dict[str, Any]] = None) -> None:
+    async def execute(self, query: LiteralString, values: Optional[Dict[str, Any]] = None) -> None:
         compiled_query, args = self._compile(query, values)
         try:
             async with self._lock:
@@ -70,7 +75,7 @@ class Connection(ConnectionABC):
         except asyncpg.exceptions.UndefinedParameterError as error:
             raise UndefinedParameterError(str(error))
 
-    async def execute_many(self, query: str, values: List[Dict[str, Any]]) -> None:
+    async def execute_many(self, query: LiteralString, values: List[Dict[str, Any]]) -> None:
         if not values:
             return
 
@@ -85,7 +90,7 @@ class Connection(ConnectionABC):
 
     async def fetch_all(
         self,
-        query: str,
+        query: LiteralString,
         values: Optional[Dict[str, Any]] = None,
     ) -> List[RecordType]:
         compiled_query, args = self._compile(query, values)
@@ -97,7 +102,7 @@ class Connection(ConnectionABC):
 
     async def fetch_one(
         self,
-        query: str,
+        query: LiteralString,
         values: Optional[Dict[str, Any]] = None,
     ) -> RecordType:
         compiled_query, args = self._compile(query, values)
@@ -109,7 +114,7 @@ class Connection(ConnectionABC):
 
     async def fetch_val(
         self,
-        query: str,
+        query: LiteralString,
         values: Optional[Dict[str, Any]] = None,
     ) -> Any:
         compiled_query, args = self._compile(query, values)
@@ -121,7 +126,7 @@ class Connection(ConnectionABC):
 
     async def iterate(
         self,
-        query: str,
+        query: LiteralString,
         values: Optional[Dict[str, Any]] = None,
     ) -> AsyncGenerator[RecordType, None]:
         compiled_query, args = self._compile(query, values)
@@ -137,7 +142,7 @@ class Connection(ConnectionABC):
         return Transaction(self, force_rollback=force_rollback)
 
     def _compile(
-        self, query: str, values: Optional[Dict[str, Any]] = None
+        self, query: LiteralString, values: Optional[Dict[str, Any]] = None
     ) -> Tuple[str, List[Any]]:
         if isinstance(values, list):
             return query, []

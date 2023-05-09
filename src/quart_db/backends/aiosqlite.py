@@ -16,6 +16,11 @@ from ..interfaces import (
     UndefinedParameterError,
 )
 
+try:
+    from typing import LiteralString
+except ImportError:
+    from typing_extensions import LiteralString
+
 
 class Transaction(TransactionABC):
     def __init__(self, connection: "Connection", *, force_rollback: bool = False) -> None:
@@ -66,14 +71,14 @@ class Connection(ConnectionABC):
         self._connection = connection
         self._lock = asyncio.Lock()
 
-    async def execute(self, query: str, values: Optional[Dict[str, Any]] = None) -> None:
+    async def execute(self, query: LiteralString, values: Optional[Dict[str, Any]] = None) -> None:
         try:
             async with self._lock:
                 await self._connection.execute(query, values)
         except ProgrammingError as error:
             raise UndefinedParameterError(str(error))
 
-    async def execute_many(self, query: str, values: List[Dict[str, Any]]) -> None:
+    async def execute_many(self, query: LiteralString, values: List[Dict[str, Any]]) -> None:
         if not values:
             return
 
@@ -85,7 +90,7 @@ class Connection(ConnectionABC):
 
     async def fetch_all(
         self,
-        query: str,
+        query: LiteralString,
         values: Optional[Dict[str, Any]] = None,
     ) -> List[RecordType]:
         try:
@@ -99,7 +104,7 @@ class Connection(ConnectionABC):
 
     async def fetch_one(
         self,
-        query: str,
+        query: LiteralString,
         values: Optional[Dict[str, Any]] = None,
     ) -> RecordType:
         try:
@@ -113,7 +118,7 @@ class Connection(ConnectionABC):
 
     async def fetch_val(
         self,
-        query: str,
+        query: LiteralString,
         values: Optional[Dict[str, Any]] = None,
     ) -> Any:
         try:
@@ -127,7 +132,7 @@ class Connection(ConnectionABC):
 
     async def iterate(
         self,
-        query: str,
+        query: LiteralString,
         values: Optional[Dict[str, Any]] = None,
     ) -> AsyncGenerator[RecordType, None]:
         try:

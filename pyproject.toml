@@ -69,6 +69,7 @@ psycopg2 = { version = ">=2.9.3", optional = true }
 pydata_sphinx_theme = { version = "*", optional = true }
 python = ">=3.7"
 quart = ">=0.16.3"
+typing_extensions = { version = "*", python = "<3.11" }
 
 [tool.poetry.dev-dependencies]
 tox = "*"
