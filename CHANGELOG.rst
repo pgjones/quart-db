@@ -1,3 +1,11 @@
+0.6.0 2023-08-10
+----------------
+
+* Bugfix ensure aiosqlite works, and specifically type conversion for
+  JSON.
+* Improve the typing utilising LiteralStrings.
+* Allow the state table name to be configured.
+
 0.5.0 2023-05-07
 ----------------
 
