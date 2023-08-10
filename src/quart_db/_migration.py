@@ -10,16 +10,19 @@ class MigrationFailedError(Exception):
 
 
 async def setup_schema(
-    connection: ConnectionABC, migrations_path: Optional[Path], data_file: Optional[Path]
+    connection: ConnectionABC,
+    migrations_path: Optional[Path],
+    data_file: Optional[Path],
+    state_table_name: str,
 ) -> None:
-    await _create_migration_table(connection)
+    await _create_migration_table(connection, state_table_name)
 
     for_update = "FOR UPDATE" if connection.supports_for_update else ""
 
     while migrations_path is not None:
         async with connection.transaction():
             migration = await connection.fetch_val(
-                f"SELECT version FROM schema_migration {for_update}"
+                f"SELECT version FROM {state_table_name} {for_update}"
             )
             migration += 1
             try:
@@ -31,13 +34,13 @@ async def setup_schema(
                     break
             else:
                 await connection.execute(
-                    "UPDATE schema_migration SET version = :version",
+                    f"UPDATE {state_table_name} SET version = :version",
                     values={"version": migration},
                 )
 
     async with connection.transaction():
         data_loaded = await connection.fetch_val(
-            f"SELECT data_loaded FROM schema_migration {for_update}"
+            f"SELECT data_loaded FROM {state_table_name} {for_update}"
         )
         if not data_loaded and data_file is not None:
             try:
@@ -45,12 +48,12 @@ async def setup_schema(
             except Exception:
                 raise MigrationFailedError("Error loading data")
             else:
-                await connection.execute("UPDATE schema_migration SET data_loaded = TRUE")
+                await connection.execute("UPDATE {state_table_name} SET data_loaded = TRUE")
 
 
-async def _create_migration_table(connection: ConnectionABC) -> None:
+async def _create_migration_table(connection: ConnectionABC, state_table_name: str) -> None:
     await connection.execute(
-        """CREATE TABLE IF NOT EXISTS schema_migration (
+        f"""CREATE TABLE IF NOT EXISTS {state_table_name} (
                onerow_id BOOL PRIMARY KEY DEFAULT TRUE,
                data_loaded BOOL NOT NULL,
                version INTEGER NOT NULL,
@@ -59,9 +62,9 @@ async def _create_migration_table(connection: ConnectionABC) -> None:
            )""",
     )
     await connection.execute(
-        """INSERT INTO schema_migration (data_loaded, version)
-                VALUES (FALSE, -1)
-           ON CONFLICT DO NOTHING"""
+        f"""INSERT INTO {state_table_name} (data_loaded, version)
+                 VALUES (FALSE, -1)
+            ON CONFLICT DO NOTHING"""
     )
 
 

@@ -54,6 +54,8 @@ class QuartDB:
              is acquired and placed on g for each request.
         backend_options: Options to pass directly to the backend
              engines. Will depend on the backend used.
+        state_table_name: The name of the table used to store the
+             migration status.
     """
 
     def __init__(
@@ -65,6 +67,7 @@ class QuartDB:
         data_path: Optional[str] = None,
         auto_request_connection: bool = True,
         backend_options: Optional[Dict[str, Any]] = None,
+        state_table_name: Optional[str] = None,
     ) -> None:
         self._close_timeout = 5  # Seconds
         self._url = url
@@ -76,6 +79,7 @@ class QuartDB:
         self._migrations_folder = migrations_folder
         self._data_path = data_path
         self._auto_request_connection = auto_request_connection
+        self._state_table_name = state_table_name
         if app is not None:
             self.init_app(app)
 
@@ -88,6 +92,8 @@ class QuartDB:
             self._migrations_folder = app.config.get("QUART_DB_MIGRATIONS_FOLDER")
         if self._data_path is None:
             self._data_path = app.config.get("QUART_DB_DATA_PATH")
+        if self._state_table_name is None:
+            self._state_table_name = app.config.get("QUART_DB_STATE_TABLE_NAME", "schema_migration")
         self._root_path = app.root_path
         self._testing = app.testing and app.config.get("QUART_DB_TESTING", None)
 
@@ -133,7 +139,7 @@ class QuartDB:
         data_path = None
         if self._data_path is not None:
             data_path = self._root_path / self._data_path
-        await setup_schema(connection, migrations_folder, data_path)
+        await setup_schema(connection, migrations_folder, data_path, self._state_table_name)
         await self._backend._release_migration_connection(connection)
 
     @asynccontextmanager
