@@ -7,7 +7,7 @@ async def migrate(connection: Connection) -> None:
     if not isinstance(connection, AsyncPGConnection):
         await connection.execute(
             """CREATE TABLE tbl (
-                   id SERIAL PRIMARY KEY,
+                   id INTEGER PRIMARY KEY,
                    data JSON
             )"""
         )

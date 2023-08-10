@@ -1,5 +1,6 @@
 import asyncio
-from sqlite3 import PARSE_COLNAMES, ProgrammingError
+import json
+from sqlite3 import PARSE_DECLTYPES, ProgrammingError
 from types import TracebackType
 from typing import Any, AsyncGenerator, Dict, List, Optional, Set
 from urllib.parse import urlsplit
@@ -20,6 +21,12 @@ try:
     from typing import LiteralString
 except ImportError:
     from typing_extensions import LiteralString
+
+DEFAULT_TYPE_CONVERTERS = {
+    "": {
+        "json": (json.dumps, json.loads, dict),
+    },
+}
 
 
 class Transaction(TransactionABC):
@@ -153,8 +160,8 @@ class Backend(BackendABC):
         self._path = path[1:]
         self._options = options
         self._connections: Set[aiosqlite.Connection] = set()
-        for _, converters in type_converters.items():
-            for typename, (encoder, decoder, pytype) in converters.items():
+        for _, converters in {**DEFAULT_TYPE_CONVERTERS, **type_converters}.items():
+            for typename, (encoder, decoder, pytype) in converters.items():  # type: ignore
                 aiosqlite.register_adapter(pytype, encoder)
                 aiosqlite.register_converter(typename, decoder)
 
@@ -169,7 +176,7 @@ class Backend(BackendABC):
         connection = aiosqlite.connect(
             database=self._path,
             isolation_level=None,
-            detect_types=PARSE_COLNAMES,
+            detect_types=PARSE_DECLTYPES,
             **self._options,
         )
         await connection.__aenter__()
@@ -199,8 +206,8 @@ class TestingBackend(BackendABC):
         _, _, path, *_ = urlsplit(url)
         self._path = path[1:]
         self._options = options
-        for _, converters in type_converters.items():
-            for typename, (encoder, decoder, pytype) in converters.items():
+        for _, converters in {**DEFAULT_TYPE_CONVERTERS, **type_converters}.items():
+            for typename, (encoder, decoder, pytype) in converters.items():  # type: ignore
                 aiosqlite.register_adapter(pytype, encoder)
                 aiosqlite.register_converter(typename, decoder)
 
@@ -208,7 +215,7 @@ class TestingBackend(BackendABC):
         connection = aiosqlite.connect(
             database=self._path,
             isolation_level=None,
-            detect_types=PARSE_COLNAMES,
+            detect_types=PARSE_DECLTYPES,
             **self._options,
         )
         await connection.__aenter__()
