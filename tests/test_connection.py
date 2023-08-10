@@ -39,9 +39,6 @@ async def test_iterate(connection: Connection) -> None:
 
 
 async def test_transaction(connection: Connection) -> None:
-    # if not isinstance(connection, AsyncPGConnection):
-    #    pytest.skip()
-
     async with connection.transaction():
         await connection.execute("SELECT 1")
 
