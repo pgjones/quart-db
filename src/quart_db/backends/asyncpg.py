@@ -158,7 +158,7 @@ class Backend(BackendABC):
         self._pool: Optional[asyncpg.Pool] = None
         self._url = url
         self._options = options
-        self._type_converters = {**DEFAULT_TYPE_CONVERTERS, **type_converters}  # type: ignore
+        self._type_converters = {**DEFAULT_TYPE_CONVERTERS, **type_converters}
 
     async def connect(self) -> None:
         if self._pool is None:
@@ -192,7 +192,7 @@ class TestingBackend(BackendABC):
     def __init__(self, url: str, options: Dict[str, Any], type_converters: TypeConverters) -> None:
         self._url = url
         self._options = options
-        self._type_converters = {**DEFAULT_TYPE_CONVERTERS, **type_converters}  # type: ignore
+        self._type_converters = {**DEFAULT_TYPE_CONVERTERS, **type_converters}
 
     async def connect(self) -> None:
         self._connection = Connection(await asyncpg.connect(dsn=self._url, **self._options))
