@@ -40,7 +40,7 @@ class Transaction(TransactionABC):
 
     async def start(self) -> None:
         if self._connection._connection.in_transaction:
-            savepoint_name = f"STARLETTE_SAVEPOINT_{uuid4().hex}"
+            savepoint_name = f"QUART_DB_SAVEPOINT_{uuid4().hex}"
             await self._connection._connection.execute(f"SAVEPOINT {savepoint_name}")
             self._savepoints.append(savepoint_name)
         else:
