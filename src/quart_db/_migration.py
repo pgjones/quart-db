@@ -48,7 +48,7 @@ async def setup_schema(
             except Exception:
                 raise MigrationFailedError("Error loading data")
             else:
-                await connection.execute("UPDATE {state_table_name} SET data_loaded = TRUE")
+                await connection.execute(f"UPDATE {state_table_name} SET data_loaded = TRUE")
 
 
 async def _create_migration_table(connection: ConnectionABC, state_table_name: str) -> None:
