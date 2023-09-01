@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "quart-db"
-version = "0.6.1"
+version = "0.6.2"
 description = "Quart-DB is a Quart extension that provides managed connection(s) to database(s)."
 authors = ["pgjones <philip.graham.jones@googlemail.com>"]
 classifiers = [
