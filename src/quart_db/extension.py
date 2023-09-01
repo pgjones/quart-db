@@ -132,15 +132,17 @@ class QuartDB:
         return response
 
     async def migrate(self) -> None:
-        connection = await self._backend._acquire_migration_connection()
         migrations_folder = None
         if self._migrations_folder is not None:
             migrations_folder = self._root_path / self._migrations_folder
         data_path = None
         if self._data_path is not None:
             data_path = self._root_path / self._data_path
-        await setup_schema(connection, migrations_folder, data_path, self._state_table_name)
-        await self._backend._release_migration_connection(connection)
+        connection = await self._backend._acquire_migration_connection()
+        try:
+            await setup_schema(connection, migrations_folder, data_path, self._state_table_name)
+        finally:
+            await self._backend._release_migration_connection(connection)
 
     @asynccontextmanager
     async def connection(self) -> AsyncIterator[ConnectionABC]:
@@ -155,8 +157,10 @@ class QuartDB:
 
         """
         conn = await self.acquire()
-        yield conn
-        await self.release(conn)
+        try:
+            yield conn
+        finally:
+            await self.release(conn)
 
     async def acquire(self) -> ConnectionABC:
         """Acquire a connection to the database.
