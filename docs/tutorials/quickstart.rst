@@ -23,7 +23,7 @@ database url should be customised to match your setup.
     @app.post("/")
     async def create():
         data = await request.get_json()
-        await g.connection..execute(
+        await g.connection.execute(
             "INSERT INTO tbl (col1, col2) VALUES (:col1, :col2)",
             {"col1": data["a"], "col2": data["b"]},
         )
