@@ -13,6 +13,10 @@ from ._migration import setup_schema
 from .interfaces import BackendABC, ConnectionABC, TypeConverters
 
 
+class MigrationTimeoutError(Exception):
+    pass
+
+
 class QuartDB:
     """A QuartDB database instance from which connections can be acquired.
 
@@ -68,6 +72,7 @@ class QuartDB:
         data_path: Optional[str] = None,
         auto_request_connection: bool = True,
         backend_options: Optional[Dict[str, Any]] = None,
+        migration_timeout: Optional[float] = None,
         state_table_name: Optional[str] = None,
     ) -> None:
         self._close_timeout = 5  # Seconds
@@ -78,6 +83,7 @@ class QuartDB:
         self._backend: Optional[BackendABC] = None
         self._type_converters: TypeConverters = defaultdict(dict)
         self._migrations_folder = migrations_folder
+        self._migration_timeout = migration_timeout
         self._data_path = data_path
         self._auto_request_connection = auto_request_connection
         self._state_table_name = state_table_name
@@ -93,6 +99,8 @@ class QuartDB:
             self._migrations_folder = app.config.get("QUART_DB_MIGRATIONS_FOLDER")
         if self._data_path is None:
             self._data_path = app.config.get("QUART_DB_DATA_PATH")
+        if self._migration_timeout is None:
+            self._migration_timeout = app.config.get("QUART_DB_MIGRATION_TIMEOUT", 60)
         if self._state_table_name is None:
             self._state_table_name = app.config.get("QUART_DB_STATE_TABLE_NAME", "schema_migration")
         self._root_path = Path(app.root_path)
@@ -117,7 +125,10 @@ class QuartDB:
         self._backend = self._create_backend()
 
         if self._migrations_folder is not None or self._data_path is not None:
-            await self.migrate()
+            try:
+                await asyncio.wait_for(self.migrate(), timeout=self._migration_timeout)
+            except asyncio.TimeoutError:
+                raise MigrationTimeoutError()
         await self._backend.connect()
 
     async def after_serving(self) -> None:
