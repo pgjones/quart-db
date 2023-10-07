@@ -1,6 +1,7 @@
 import asyncio
 from collections import defaultdict
 from contextlib import asynccontextmanager
+from pathlib import Path
 from typing import Any, AsyncIterator, Callable, Dict, Optional, Type
 from urllib.parse import urlsplit
 
@@ -94,7 +95,7 @@ class QuartDB:
             self._data_path = app.config.get("QUART_DB_DATA_PATH")
         if self._state_table_name is None:
             self._state_table_name = app.config.get("QUART_DB_STATE_TABLE_NAME", "schema_migration")
-        self._root_path = app.root_path
+        self._root_path = Path(app.root_path)
         self._testing = app.testing and app.config.get("QUART_DB_TESTING", None)
 
         if app.config["PROPAGATE_EXCEPTIONS"] is None:
