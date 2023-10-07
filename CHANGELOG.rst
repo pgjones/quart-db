@@ -1,3 +1,10 @@
+0.7.0 2023-10-07
+----------------
+
+* Add a migrations timeout defaulting to 60s.
+* Support Quart 0.19 onwards.
+* Support 3.12 drop 3.7.
+
 0.6.2 2023-09-01
 ----------------
 
