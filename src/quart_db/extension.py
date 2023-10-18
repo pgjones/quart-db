@@ -6,7 +6,7 @@ from typing import Any, AsyncIterator, Callable, Dict, Optional, Type
 from urllib.parse import urlsplit
 
 import click
-from quart import g, Quart, Response
+from quart import g, Quart
 from quart.cli import pass_script_info, ScriptInfo
 
 from ._migration import setup_schema
@@ -116,7 +116,7 @@ class QuartDB:
 
         if app.config.get("QUART_DB_AUTO_REQUEST_CONNECTION", self._auto_request_connection):
             app.before_request(self.before_request)
-            app.after_request(self.after_request)
+            app.teardown_request(self.teardown_request)
 
         app.cli.add_command(_migrate_command)
         app.cli.add_command(_schema_command)
@@ -137,11 +137,10 @@ class QuartDB:
     async def before_request(self) -> None:
         g.connection = await self.acquire()
 
-    async def after_request(self, response: Response) -> Response:
+    async def teardown_request(self, _exception: Optional[BaseException]) -> None:
         if getattr(g, "connection", None) is not None:
             await self.release(g.connection)
         g.connection = None
-        return response
 
     async def migrate(self) -> None:
         migrations_folder = None
