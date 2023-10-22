@@ -2,6 +2,7 @@ import pytest
 
 from quart_db import Connection, UndefinedParameterError
 from quart_db.backends.asyncpg import Connection as AsyncpgConnection
+from quart_db.backends.psycopg import Connection as PsycopgConnection
 
 
 async def test_execute(connection: Connection) -> None:
@@ -10,27 +11,30 @@ async def test_execute(connection: Connection) -> None:
 
 async def test_execute_many(connection: Connection) -> None:
     await connection.execute_many(
-        "INSERT INTO tbl (data) VALUES (:data)",
-        [{"data": 2}, {"data": 3}],
+        "INSERT INTO tbl (value) VALUES (:value)",
+        [{"value": 2}, {"value": 3}],
     )
-    results = await connection.fetch_all("SELECT data FROM tbl")
-    assert [2, 3] == [result["data"] for result in results]
+    results = await connection.fetch_all("SELECT value FROM tbl")
+    assert [2, 3] == [result["value"] for result in results]
 
 
 async def test_fetch_one(connection: Connection) -> None:
     await connection.execute(
-        "INSERT INTO tbl (data) VALUES (:data)",
-        {"data": 2},
+        "INSERT INTO tbl (value) VALUES (:value)",
+        {"value": 2},
     )
     result = await connection.fetch_one("SELECT * FROM tbl")
-    assert result["data"] == 2
+    assert result["value"] == 2
 
 
 async def test_fetch_one_list_params(connection: Connection) -> None:
-    param = "$1" if isinstance(connection, AsyncpgConnection) else "?"
-    await connection.execute(f"INSERT INTO tbl (data) VALUES ({param})", [2])
+    if isinstance(connection, (AsyncpgConnection, PsycopgConnection)):
+        param = "$1"
+    else:
+        param = "?"
+    await connection.execute(f"INSERT INTO tbl (data) VALUES ({param})", [{"A": 2}])
     result = await connection.fetch_one("SELECT * FROM tbl")
-    assert result["data"] == 2
+    assert result["data"] == {"A": 2}
 
 
 async def test_fetch_one_no_result(connection: Connection) -> None:
@@ -50,10 +54,12 @@ async def test_fetch_val_no_result(connection: Connection) -> None:
 
 async def test_iterate(connection: Connection) -> None:
     await connection.execute_many(
-        "INSERT INTO tbl (data) VALUES (:data)",
-        [{"data": 2}, {"data": 3}],
+        "INSERT INTO tbl (value) VALUES (:value)",
+        [{"value": 2}, {"value": 3}],
     )
-    assert [2, 3] == [result["data"] async for result in connection.iterate("SELECT data FROM tbl")]
+    assert [2, 3] == [
+        result["value"] async for result in connection.iterate("SELECT value FROM tbl")
+    ]
 
 
 async def test_transaction(connection: Connection) -> None:
@@ -64,7 +70,7 @@ async def test_transaction(connection: Connection) -> None:
 async def test_transaction_rollback(connection: Connection) -> None:
     try:
         async with connection.transaction():
-            await connection.execute("INSERT INTO tbl (data) VALUES (:data)", {"data": 2})
+            await connection.execute("INSERT INTO tbl (value) VALUES (:value)", {"value": 2})
             raise Exception()
     except Exception:
         pass

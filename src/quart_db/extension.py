@@ -3,7 +3,7 @@ from collections import defaultdict
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any, AsyncIterator, Callable, Dict, Optional, Type
-from urllib.parse import urlsplit
+from urllib.parse import urlsplit, urlunsplit
 
 import click
 from quart import g, Quart
@@ -245,23 +245,25 @@ class QuartDB:
         self._type_converters[schema][typename] = (encoder, decoder, pytype)
 
     def _create_backend(self) -> BackendABC:
-        scheme, *_ = urlsplit(self._url)
-        if scheme in {"postgresql", "postgres"}:
-            from .backends.asyncpg import Backend, TestingBackend
-
-            if self._testing:
-                return TestingBackend(self._url, self._backend_options, self._type_converters)
+        scheme, *parts = urlsplit(self._url)
+        if scheme.startswith(("postgresql", "postgres")):
+            if scheme.endswith("psycopg"):
+                from .backends.psycopg import Backend, TestingBackend
             else:
-                return Backend(self._url, self._backend_options, self._type_converters)
+                from .backends.asyncpg import Backend, TestingBackend  # type: ignore
+            scheme = "postgresql"
+            url = urlunsplit((scheme, *parts))
         elif scheme == "sqlite":
             from .backends.aiosqlite import Backend, TestingBackend  # type: ignore
 
-            if self._testing:
-                return TestingBackend(self._url, self._backend_options, self._type_converters)
-            else:
-                return Backend(self._url, self._backend_options, self._type_converters)
+            url = self._url
         else:
             raise ValueError(f"{scheme} is not a supported backend")
+
+        if self._testing:
+            return TestingBackend(url, self._backend_options, self._type_converters)
+        else:
+            return Backend(url, self._backend_options, self._type_converters)
 
 
 @click.command("db-schema")
