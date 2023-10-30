@@ -1,3 +1,8 @@
+0.7.1 2023-10-30
+----------------
+
+* Ensure auto request connectons are released.
+
 0.7.0 2023-10-07
 ----------------
 
