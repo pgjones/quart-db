@@ -4,7 +4,8 @@ Quickstart
 ==========
 
 A simple CRUD API can be written as given below, noting that the
-database url should be customised to match your setup.
+database url should be customised to match your setup (the given URL
+creates an in memory sqlite database).
 
 .. code-block:: python
     :caption: schema.py
@@ -13,7 +14,7 @@ database url should be customised to match your setup.
     from quart_db import QuartDB
 
     app = Quart(__name__)
-    db = QuartDB(app, url="postgresql://username:password@0.0.0.0:5432/db_name")
+    db = QuartDB(app, url="sqlite:memory:")
 
     @app.get("/")
     async def get_all():
@@ -50,3 +51,29 @@ database url should be customised to match your setup.
             {"id": id, "col1": data["a"], "col2": data["b"]},
         )
         return {}
+
+Initial migrations
+------------------
+
+In the above example it is assumed there is a table named ``tbl`` with
+columns ``id``, ``col1`` and ``col2``. If the database does not have a
+structure (schema) or you wish to change it, a migration can be
+used.
+
+Quart-DB looks for migrations in a ``migrations`` folder that should
+be placed alongside the application (as with ``templates``). A example
+would be placing the following in ``migrations/0.py``
+
+.. code-block:: python
+    :caption: migrations/0.py
+
+    async def migrate(connection):
+        await connection.execute(
+            "CREATE TABLE tbl (id INT NOT NULL PRIMARY KEY, col1 TEXT, col2 TEXT)"
+        )
+
+    async def valid_migration(connection):
+        return True
+
+This migration will run once when the application starts. See
+:ref:`migrations` for more.
