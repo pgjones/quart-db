@@ -5,8 +5,8 @@ Migrations
 
 Quart-DB considers migrations to be linear and forward only, as such
 migrations are numbered from 0, to 1, onwards. Each migration is a
-python file containing two functions, the first ``migrate`` has the
-following signature,
+python file containing a ``migrate`` function with the following
+signature,
 
 .. code-block:: python
 
@@ -16,7 +16,8 @@ following signature,
 ``migrate`` should run whatever queries are required for the
 migration.
 
-The second ``valid_migration`` has the following signature,
+The file can also contain an optional ``valid_migration`` function
+with the following signature,
 
 .. code-block:: python
 
@@ -24,8 +25,8 @@ The second ``valid_migration`` has the following signature,
         ...
 
 ``valid_migration`` should check that the migration was successful and
-the data in the database is as expected. It can just ``return True``
-if this is something you'd prefer to skip.
+the data in the database is as expected. It can be omitted if this is
+something you'd prefer to skip.
 
 Transactions
 ------------

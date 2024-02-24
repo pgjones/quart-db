@@ -75,7 +75,7 @@ async def _run_migration(connection: ConnectionABC, migration: int, migrations_p
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     await module.migrate(connection)
-    valid = await module.valid_migration(connection)
+    valid = not hasattr(module, "valid_migration") or await module.valid_migration(connection)
     if not valid:
         raise MigrationFailedError(f"Migration {migration} is not valid")
 

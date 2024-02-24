@@ -21,7 +21,3 @@ async def migrate(connection: Connection) -> None:
                    options OPTIONS_T
             )"""
         )
-
-
-async def valid_migration(connection: Connection) -> bool:
-    return True
