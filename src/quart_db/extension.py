@@ -9,7 +9,12 @@ import click
 from quart import g, Quart
 from quart.cli import pass_script_info, ScriptInfo
 
-from ._migration import setup_schema
+from ._migration import (
+    ensure_state_table,
+    execute_background_migrations,
+    execute_data_loader,
+    execute_foreground_migrations,
+)
 from .interfaces import BackendABC, ConnectionABC, TypeConverters
 
 
@@ -121,6 +126,8 @@ class QuartDB:
         app.cli.add_command(_migrate_command)
         app.cli.add_command(_schema_command)
 
+        self._app = app
+
     async def before_serving(self) -> None:
         self._backend = self._create_backend()
 
@@ -142,18 +149,31 @@ class QuartDB:
             await self.release(g.connection)
         g.connection = None
 
-    async def migrate(self) -> None:
-        migrations_folder = None
+    async def migrate(self, force_foreground: bool = False) -> None:
+        await ensure_state_table(self._backend, self._state_table_name)
+
         if self._migrations_folder is not None:
             migrations_folder = self._root_path / self._migrations_folder
-        data_path = None
+            await execute_foreground_migrations(
+                self._backend, migrations_folder, self._state_table_name
+            )
+            if force_foreground:
+                await execute_background_migrations(
+                    self._backend,
+                    migrations_folder,
+                    self._state_table_name,
+                )
+            else:
+                self._app.add_background_task(
+                    execute_background_migrations,
+                    self._backend,
+                    migrations_folder,
+                    self._state_table_name,
+                )
+
         if self._data_path is not None:
             data_path = self._root_path / self._data_path
-        connection = await self._backend._acquire_migration_connection()
-        try:
-            await setup_schema(connection, migrations_folder, data_path, self._state_table_name)
-        finally:
-            await self._backend._release_migration_connection(connection)
+            await execute_data_loader(self._backend, data_path, self._state_table_name)
 
     @asynccontextmanager
     async def connection(self) -> AsyncIterator[ConnectionABC]:
@@ -272,7 +292,7 @@ def _migrate_command(info: ScriptInfo) -> None:
     async def _inner() -> None:
         for extension in app.extensions["QUART_DB"]:
             extension._backend = extension._create_backend()
-            await extension.migrate()
+            await extension.migrate(force_foreground=True)
 
     asyncio.run(_inner())
     click.echo("Quart-DB migration complete")

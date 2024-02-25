@@ -20,11 +20,12 @@ def _url(request: pytest.FixtureRequest, tmp_path: Path) -> str:
 
 @pytest.fixture(name="connection")
 async def _connection(url: str) -> AsyncGenerator[Connection, None]:
-    db = QuartDB(Quart(__name__), url=url)
+    app = Quart(__name__)
+    db = QuartDB(app, url=url)
 
     db.set_converter("options_t", lambda type_: type_.value, Options, pytype=Options)
-    await db.before_serving()
+    await app.startup()
     async with db.connection() as connection:
         async with connection.transaction(force_rollback=True):
             yield connection
-    await db.after_serving()
+    await app.shutdown()
