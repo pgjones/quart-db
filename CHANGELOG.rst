@@ -1,3 +1,13 @@
+0.8.0 2024-02-25
+----------------
+
+* Make the valid_migration function optional, if not present the
+  migration is assumed to be valid.
+* Support background migrations. Note the first deployment should be
+  monitored as this requires a change to Quart-DB's state table.
+* Bugfix ensure None is returned if there is no result for
+  ``fetch_val`` and ``fetch_one``.
+
 0.7.1 2023-10-30
 ----------------
 
