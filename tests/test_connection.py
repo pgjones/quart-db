@@ -25,9 +25,19 @@ async def test_fetch_one(connection: Connection) -> None:
     assert result["data"] == 2
 
 
+async def test_fetch_one_no_result(connection: Connection) -> None:
+    result = await connection.fetch_one("SELECT * FROM tbl WHERE id = -1")
+    assert result is None
+
+
 async def test_fetch_val(connection: Connection) -> None:
     value = await connection.fetch_val("SELECT 2")
     assert value == 2
+
+
+async def test_fetch_val_no_result(connection: Connection) -> None:
+    value = await connection.fetch_val("SELECT id FROM tbl WHERE id = -1")
+    assert value is None
 
 
 async def test_iterate(connection: Connection) -> None:

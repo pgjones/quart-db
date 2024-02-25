@@ -89,7 +89,9 @@ class ConnectionABC(ABC):
         pass
 
     @abstractmethod
-    async def fetch_val(self, query: LiteralString, values: Optional[Dict[str, Any]] = None) -> Any:
+    async def fetch_val(
+        self, query: LiteralString, values: Optional[Dict[str, Any]] = None
+    ) -> Optional[Any]:
         """Execute a query, returning only a value
 
         The query accepts named arguments i.e. `:name`in the query

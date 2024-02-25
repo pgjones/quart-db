@@ -113,7 +113,7 @@ class Connection(ConnectionABC):
         self,
         query: LiteralString,
         values: Optional[Dict[str, Any]] = None,
-    ) -> RecordType:
+    ) -> Optional[RecordType]:
         try:
             async with self._lock:
                 async with self._connection.execute(query, values) as cursor:
@@ -121,13 +121,15 @@ class Connection(ConnectionABC):
         except ProgrammingError as error:
             raise UndefinedParameterError(str(error))
         else:
-            return {key: row[key] for key in row.keys()}
+            if row is not None:
+                return {key: row[key] for key in row.keys()}
+            return None
 
     async def fetch_val(
         self,
         query: LiteralString,
         values: Optional[Dict[str, Any]] = None,
-    ) -> Any:
+    ) -> Optional[Any]:
         try:
             async with self._lock:
                 async with self._connection.execute(query, values) as cursor:
@@ -135,7 +137,9 @@ class Connection(ConnectionABC):
         except ProgrammingError as error:
             raise UndefinedParameterError(str(error))
         else:
-            return result[0]
+            if result is not None:
+                return result[0]
+            return None
 
     async def iterate(
         self,
