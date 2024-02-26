@@ -1,13 +1,19 @@
 import importlib.util
+from contextlib import AbstractAsyncContextManager, asynccontextmanager
 from pathlib import Path
 from types import ModuleType
-from typing import AsyncGenerator, Literal
+from typing import AsyncGenerator, Callable, Literal
 
 from .interfaces import BackendABC, ConnectionABC
 
 
 class MigrationFailedError(Exception):
     pass
+
+
+@asynccontextmanager
+async def null_context() -> AsyncGenerator[None, None]:
+    yield None
 
 
 async def execute_foreground_migrations(
@@ -18,7 +24,7 @@ async def execute_foreground_migrations(
     connection = await backend._acquire_migration_connection()
     try:
         async for module in _migration_generator(
-            connection, "foreground", migrations_path, state_table_name
+            connection, "foreground", migrations_path, state_table_name, connection.transaction
         ):
             await module.migrate(connection)
             valid = not hasattr(module, "valid_migration") or await module.valid_migration(
@@ -38,7 +44,7 @@ async def execute_background_migrations(
     connection = await backend._acquire_migration_connection()
     try:
         async for module in _migration_generator(
-            connection, "background", migrations_path, state_table_name
+            connection, "background", migrations_path, state_table_name, null_context
         ):
             migrate = getattr(module, "background_migrate", None)
             if migrate is not None:
@@ -84,11 +90,12 @@ async def _migration_generator(
     type_name: Literal["foreground", "background"],
     migrations_path: Path,
     state_table_name: str,
+    context: Callable[..., AbstractAsyncContextManager],
 ) -> AsyncGenerator[ModuleType, None]:
     for_update = "FOR UPDATE" if connection.supports_for_update else ""
 
     while True:
-        async with connection.transaction():
+        async with context():
             migration = await connection.fetch_val(
                 f"SELECT {type_name} FROM {state_table_name} {for_update}"
             )
