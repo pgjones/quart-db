@@ -38,7 +38,7 @@ async def execute_background_migrations(
     connection = await backend._acquire_migration_connection()
     try:
         async for module in _migration_generator(
-            connection, "foreground", migrations_path, state_table_name
+            connection, "background", migrations_path, state_table_name
         ):
             migrate = getattr(module, "background_migrate", None)
             if migrate is not None:
