@@ -1,3 +1,9 @@
+0.8.1 2024-02-26
+----------------
+
+* Bugfix naming typo.
+* Bugfix background migrations should not run in a transaction.
+
 0.8.0 2024-02-25
 ----------------
 
