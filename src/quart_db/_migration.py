@@ -122,10 +122,13 @@ async def ensure_state_table(backend: BackendABC, state_table_name: str) -> None
 
     # This is required to migrate previous state version tables
     try:
-        version = await connection.fetch_val(f"SELECT version FROM {state_table_name}")
+        result = await connection.fetch_one(f"SELECT version, data_loaded FROM {state_table_name}")
     except Exception:  # Either table or column "version" does not exist
         version = -1
+        data_loaded = False
     else:  # "version" does exist => old table structure
+        version = result["version"]
+        data_loaded = result["data_loaded"]
         await connection.execute(f"DROP TABLE {state_table_name}")
 
     try:
@@ -141,9 +144,9 @@ async def ensure_state_table(backend: BackendABC, state_table_name: str) -> None
         )
         await connection.execute(
             f"""INSERT INTO {state_table_name} (background, data_loaded, foreground)
-                     VALUES (:version, FALSE, :version)
+                     VALUES (:version, :data_loaded, :version)
                 ON CONFLICT DO NOTHING""",
-            {"version": version},
+            {"version": version, "data_loaded": data_loaded},
         )
     finally:
         await backend._release_migration_connection(connection)
