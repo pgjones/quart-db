@@ -1,3 +1,8 @@
+0.8.2 2024-03-06
+----------------
+
+* Bugfix ensure the value of data_loaded is kept.
+
 0.8.1 2024-02-26
 ----------------
 
