@@ -1,10 +1,18 @@
 Database backends
 =================
 
-To connect to a postgresql database the asyncpg backend is used. It is
-installed via the ``postgresql`` extra. It will be used if
-``QUART_DB_DATABASE_URL`` has ``postgresql`` as the scheme.
+Quart-DB supports 3 backends, PostgreSQL+asyncpg, PostgreSQL+psycopg,
+and SQLite+aiosqlite. The backend used will be chosen based on the
+scheme provided in the ``QUART_DB_DATABASE_URL``. To choose
+PostgreSQL+asyncpg
 
-To connect to a sqlite database the aiosqlite backend is used. It is
-installed via the ``sqlite`` extra.  It will be used if
-``QUART_DB_DATABASE_URL`` has ``sqlite`` as the scheme.
+================== ========== =========
+Scheme             Database   Engine
+------------------ ---------- ---------
+postgresql+asyncpg PostgreSQL asyncpg
+postgresql+psycopg PostgreSQL psycopg
+sqlite             SQLite     aiosqlite
+================== ========== =========
+
+Note that ``postgresql`` as the scheme will default to
+PostgreSQL+asyncpg.

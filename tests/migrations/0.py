@@ -8,7 +8,8 @@ async def migrate(connection: Connection) -> None:
         await connection.execute(
             """CREATE TABLE tbl (
                    id INTEGER PRIMARY KEY,
-                   data JSON
+                   data JSON,
+                   value INTEGER
             )"""
         )
     else:
@@ -18,6 +19,7 @@ async def migrate(connection: Connection) -> None:
             """CREATE TABLE tbl (
                    id INT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
                    data JSON,
+                   value INT,
                    options OPTIONS_T
             )"""
         )
