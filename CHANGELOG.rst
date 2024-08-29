@@ -1,3 +1,8 @@
+0.8.3 2024-08-29
+----------------
+
+* Bugfix correctly support list values (not named).
+
 0.8.2 2024-03-06
 ----------------
 
