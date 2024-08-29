@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from types import TracebackType
-from typing import Any, AsyncGenerator, Callable, Dict, List, Mapping, Optional, Tuple, Type
+from typing import Any, AsyncGenerator, Callable, Dict, List, Mapping, Optional, Tuple, Type, Union
 
 try:
     from typing import LiteralString
@@ -8,6 +8,7 @@ except ImportError:
     from typing_extensions import LiteralString
 
 
+ValueType = Union[Dict[str, Any], List[Any]]
 RecordType = Mapping[str, Any]
 TypeConverters = Dict[str, Dict[str, Tuple[Callable, Callable, Optional[Type]]]]
 
@@ -45,7 +46,7 @@ class ConnectionABC(ABC):
         pass
 
     @abstractmethod
-    async def execute(self, query: LiteralString, values: Optional[Dict[str, Any]] = None) -> None:
+    async def execute(self, query: LiteralString, values: Optional[ValueType] = None) -> None:
         """Execute a query, with bind values if needed
 
         The query accepts named arguments i.e. `:name`in the query
@@ -55,7 +56,7 @@ class ConnectionABC(ABC):
         pass
 
     @abstractmethod
-    async def execute_many(self, query: LiteralString, values: List[Dict[str, Any]]) -> None:
+    async def execute_many(self, query: LiteralString, values: List[ValueType]) -> None:
         """Execute a query for each set of values
 
         The query accepts a list of named arguments i.e. `:name`in the
@@ -66,7 +67,7 @@ class ConnectionABC(ABC):
 
     @abstractmethod
     async def fetch_all(
-        self, query: LiteralString, values: Optional[Dict[str, Any]] = None
+        self, query: LiteralString, values: Optional[ValueType] = None
     ) -> List[RecordType]:
         """Execute a query, returning all the result rows
 
@@ -78,7 +79,7 @@ class ConnectionABC(ABC):
 
     @abstractmethod
     async def fetch_one(
-        self, query: LiteralString, values: Optional[Dict[str, Any]] = None
+        self, query: LiteralString, values: Optional[ValueType] = None
     ) -> Optional[RecordType]:
         """Execute a query, returning only the first result rows
 
@@ -90,7 +91,7 @@ class ConnectionABC(ABC):
 
     @abstractmethod
     async def fetch_val(
-        self, query: LiteralString, values: Optional[Dict[str, Any]] = None
+        self, query: LiteralString, values: Optional[ValueType] = None
     ) -> Optional[Any]:
         """Execute a query, returning only a value
 
@@ -104,7 +105,7 @@ class ConnectionABC(ABC):
     def iterate(
         self,
         query: LiteralString,
-        values: Optional[Dict[str, Any]] = None,
+        values: Optional[ValueType] = None,
     ) -> AsyncGenerator[RecordType, None]:
         """Execute a query, and iterate over the result rows
 

@@ -15,6 +15,7 @@ from ..interfaces import (
     TransactionABC,
     TypeConverters,
     UndefinedParameterError,
+    ValueType,
 )
 
 try:
@@ -78,14 +79,14 @@ class Connection(ConnectionABC):
         self._connection = connection
         self._lock = asyncio.Lock()
 
-    async def execute(self, query: LiteralString, values: Optional[Dict[str, Any]] = None) -> None:
+    async def execute(self, query: LiteralString, values: Optional[ValueType] = None) -> None:
         try:
             async with self._lock:
                 await self._connection.execute(query, values)
         except ProgrammingError as error:
             raise UndefinedParameterError(str(error))
 
-    async def execute_many(self, query: LiteralString, values: List[Dict[str, Any]]) -> None:
+    async def execute_many(self, query: LiteralString, values: List[ValueType]) -> None:
         if not values:
             return
 
@@ -98,7 +99,7 @@ class Connection(ConnectionABC):
     async def fetch_all(
         self,
         query: LiteralString,
-        values: Optional[Dict[str, Any]] = None,
+        values: Optional[ValueType] = None,
     ) -> List[RecordType]:
         try:
             async with self._lock:
@@ -112,7 +113,7 @@ class Connection(ConnectionABC):
     async def fetch_one(
         self,
         query: LiteralString,
-        values: Optional[Dict[str, Any]] = None,
+        values: Optional[ValueType] = None,
     ) -> Optional[RecordType]:
         try:
             async with self._lock:
@@ -128,7 +129,7 @@ class Connection(ConnectionABC):
     async def fetch_val(
         self,
         query: LiteralString,
-        values: Optional[Dict[str, Any]] = None,
+        values: Optional[ValueType] = None,
     ) -> Optional[Any]:
         try:
             async with self._lock:
@@ -144,7 +145,7 @@ class Connection(ConnectionABC):
     async def iterate(
         self,
         query: LiteralString,
-        values: Optional[Dict[str, Any]] = None,
+        values: Optional[ValueType] = None,
     ) -> AsyncGenerator[RecordType, None]:
         try:
             async with self._lock:

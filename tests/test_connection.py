@@ -1,6 +1,7 @@
 import pytest
 
 from quart_db import Connection, UndefinedParameterError
+from quart_db.backends.asyncpg import Connection as AsyncpgConnection
 
 
 async def test_execute(connection: Connection) -> None:
@@ -21,6 +22,13 @@ async def test_fetch_one(connection: Connection) -> None:
         "INSERT INTO tbl (data) VALUES (:data)",
         {"data": 2},
     )
+    result = await connection.fetch_one("SELECT * FROM tbl")
+    assert result["data"] == 2
+
+
+async def test_fetch_one_list_params(connection: Connection) -> None:
+    param = "$1" if isinstance(connection, AsyncpgConnection) else "?"
+    await connection.execute(f"INSERT INTO tbl (data) VALUES ({param})", [2])
     result = await connection.fetch_one("SELECT * FROM tbl")
     assert result["data"] == 2
 
