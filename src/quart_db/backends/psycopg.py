@@ -18,6 +18,7 @@ from ..interfaces import (
     TransactionABC,
     TypeConverters,
     UndefinedParameterError,
+    ValueType,
 )
 
 try:
@@ -69,7 +70,7 @@ class Connection(ConnectionABC):
     def __init__(self, connection: psycopg.AsyncConnection) -> None:
         self._connection = connection
 
-    async def execute(self, query: LiteralString, values: Optional[Dict[str, Any]] = None) -> None:
+    async def execute(self, query: LiteralString, values: Optional[ValueType] = None) -> None:
         compiled_query, args = self._compile(query, values)
         try:
             async with self._connection.cursor() as cursor:
@@ -77,7 +78,7 @@ class Connection(ConnectionABC):
         except psycopg.ProgrammingError as error:
             raise UndefinedParameterError(str(error))
 
-    async def execute_many(self, query: LiteralString, values: List[Dict[str, Any]]) -> None:
+    async def execute_many(self, query: LiteralString, values: List[ValueType]) -> None:
         if not values:
             return
 
@@ -93,33 +94,33 @@ class Connection(ConnectionABC):
     async def fetch_all(
         self,
         query: LiteralString,
-        values: Optional[Dict[str, Any]] = None,
+        values: Optional[ValueType] = None,
     ) -> List[RecordType]:
         compiled_query, args = self._compile(query, values)
         try:
             async with self._connection.cursor() as cursor:
                 await cursor.execute(compiled_query, args)
-                return await cursor.fetchall()
+                return await cursor.fetchall()  # type: ignore
         except psycopg.ProgrammingError as error:
             raise UndefinedParameterError(str(error))
 
     async def fetch_one(
         self,
         query: LiteralString,
-        values: Optional[Dict[str, Any]] = None,
+        values: Optional[ValueType] = None,
     ) -> Optional[RecordType]:
         compiled_query, args = self._compile(query, values)
         try:
             async with self._connection.cursor() as cursor:
                 await cursor.execute(compiled_query, args)
-                return await cursor.fetchone()
+                return await cursor.fetchone()  # type: ignore
         except psycopg.ProgrammingError as error:
             raise UndefinedParameterError(str(error))
 
     async def fetch_val(
         self,
         query: LiteralString,
-        values: Optional[Dict[str, Any]] = None,
+        values: Optional[ValueType] = None,
     ) -> Optional[Any]:
         compiled_query, args = self._compile(query, values)
         try:
@@ -127,7 +128,7 @@ class Connection(ConnectionABC):
                 await cursor.execute(compiled_query, args)
                 result = await cursor.fetchone()
                 if result is not None:
-                    return next(iter(result.values()))
+                    return next(iter(result.values()))  # type: ignore
                 else:
                     return None
         except psycopg.ProgrammingError as error:
@@ -136,13 +137,13 @@ class Connection(ConnectionABC):
     async def iterate(
         self,
         query: LiteralString,
-        values: Optional[Dict[str, Any]] = None,
+        values: Optional[ValueType] = None,
     ) -> AsyncGenerator[RecordType, None]:
         compiled_query, args = self._compile(query, values)
         async with self._connection.cursor() as cursor:
             try:
                 async for record in cursor.stream(compiled_query, *args):
-                    yield record
+                    yield record  # type: ignore
             except psycopg.ProgrammingError as error:
                 raise UndefinedParameterError(str(error))
 
@@ -150,7 +151,7 @@ class Connection(ConnectionABC):
         return Transaction(self, force_rollback=force_rollback)
 
     def _compile(
-        self, query: LiteralString, values: Optional[Dict[str, Any]] = None
+        self, query: LiteralString, values: Optional[ValueType] = None
     ) -> Tuple[str, List[Any]]:
         if isinstance(values, list):
             return query, values
@@ -220,7 +221,7 @@ class TestingBackend(BackendABC):
                 self._url,
                 autocommit=True,
                 cursor_factory=psycopg.AsyncRawCursor,
-                row_factory=dict_row,
+                row_factory=dict_row,  # type: ignore
             )
         )
         await _init_connection(self._connection._connection, self._type_converters)  # type: ignore
