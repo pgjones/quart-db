@@ -22,6 +22,12 @@ signature,
 ``migrate`` will run before the app starts serving (in the foreground)
 and should run whatever queries are required for the migration.
 
+.. warning::
+
+    If you are using postgres Quart-DB will ensure only a single
+    invocation of ``migrate`` will occur regardless of the number of
+    app instances. This is not possible though with SQLite.
+
 A migration may also include a ``background_migrate`` function for a
 migration that runs whilst the app is serving (in the background) with
 the following signature,
@@ -34,6 +40,11 @@ the following signature,
 ``background_migrate`` will run whilst the app is serving. Note all
 the foreground migrations will complete before the background
 migrations start.
+
+.. warning::
+
+    If you are running multiple instances of your app there will be
+    multiple instances of ``background_migrate`` running concurrently.
 
 The file can also contain an optional ``valid_migration`` function
 with the following signature,
