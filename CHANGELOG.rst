@@ -1,3 +1,10 @@
+0.9.0 2024-12-15
+----------------
+
+* Add support for a psycopg backend.
+* Separate the backend and test connection options.
+* Support Python 3.13, drop Python 3.8.
+
 0.8.3 2024-08-29
 ----------------
 
