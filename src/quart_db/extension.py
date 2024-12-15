@@ -64,6 +64,9 @@ class QuartDB:
              is acquired and placed on g for each request.
         backend_options: Options to pass directly to the backend
              engines. Will depend on the backend used.
+        test_connection_options: Options to pass directly to the
+             connection used for testing. Will depend on the
+             backend used.
         state_table_name: The name of the table used to store the
              migration status.
     """
@@ -77,6 +80,7 @@ class QuartDB:
         data_path: Optional[str] = None,
         auto_request_connection: bool = True,
         backend_options: Optional[Dict[str, Any]] = None,
+        test_connection_options: Optional[Dict[str, Any]] = None,
         migration_timeout: Optional[float] = None,
         state_table_name: Optional[str] = None,
     ) -> None:
@@ -85,6 +89,9 @@ class QuartDB:
         self._backend_options = backend_options
         if self._backend_options is None:
             self._backend_options = {}
+        self._test_connection_options = test_connection_options
+        if self._test_connection_options is None:
+            self._test_connection_options = {}
         self._backend: Optional[BackendABC] = None
         self._type_converters: TypeConverters = defaultdict(dict)
         self._migrations_folder = migrations_folder
@@ -261,7 +268,7 @@ class QuartDB:
             raise ValueError(f"{scheme} is not a supported backend")
 
         if self._testing:
-            return TestingBackend(url, self._backend_options, self._type_converters)
+            return TestingBackend(url, self._test_connection_options, self._type_converters)
         else:
             return Backend(url, self._backend_options, self._type_converters)
 
