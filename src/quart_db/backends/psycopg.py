@@ -26,7 +26,7 @@ try:
 except ImportError:
     from typing_extensions import LiteralString
 
-DEFAULT_TYPE_CONVERTERS = {
+DEFAULT_TYPE_CONVERTERS: TypeConverters = {
     "pg_catalog": {
         "json": (json.dumps, json.loads, dict),
         "jsonb": (json.dumps, json.loads, dict),
@@ -189,7 +189,7 @@ class Backend(BackendABC):
 
     async def acquire(self) -> Connection:
         connection = await self._pool.getconn()
-        await _init_connection(connection, self._type_converters)  # type: ignore
+        await _init_connection(connection, self._type_converters)
         return Connection(connection)
 
     async def release(self, connection: Connection) -> None:  # type: ignore[override]
@@ -206,7 +206,7 @@ class Backend(BackendABC):
         await connection._connection.close()
 
     async def _init(self, connection: asyncpg.Connection) -> None:
-        await _init_connection(connection, self._type_converters)  # type: ignore
+        await _init_connection(connection, self._type_converters)
 
 
 class TestingBackend(BackendABC):

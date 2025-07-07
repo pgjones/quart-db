@@ -21,7 +21,7 @@ try:
 except ImportError:
     from typing_extensions import LiteralString
 
-DEFAULT_TYPE_CONVERTERS = {
+DEFAULT_TYPE_CONVERTERS: TypeConverters = {
     "pg_catalog": {
         "json": (json.dumps, json.loads, None),
         "jsonb": (json.dumps, json.loads, None),
@@ -105,7 +105,7 @@ class Connection(ConnectionABC):
         self,
         query: LiteralString,
         values: Optional[ValueType] = None,
-    ) -> RecordType:
+    ) -> Optional[RecordType]:
         compiled_query, args = self._compile(query, values)
         try:
             async with self._lock:
@@ -181,14 +181,14 @@ class Backend(BackendABC):
 
     async def _acquire_migration_connection(self) -> Connection:
         asyncpg_connection = await asyncpg.connect(dsn=self._url)
-        await _init_connection(asyncpg_connection, DEFAULT_TYPE_CONVERTERS)  # type: ignore
+        await _init_connection(asyncpg_connection, DEFAULT_TYPE_CONVERTERS)
         return Connection(asyncpg_connection)
 
     async def _release_migration_connection(self, connection: Connection) -> None:  # type: ignore[override]  # noqa: E501
         await connection._connection.close()
 
     async def _init(self, connection: asyncpg.Connection) -> None:
-        await _init_connection(connection, self._type_converters)  # type: ignore
+        await _init_connection(connection, self._type_converters)
 
 
 class TestingBackend(BackendABC):
@@ -199,7 +199,7 @@ class TestingBackend(BackendABC):
 
     async def connect(self) -> None:
         self._connection = Connection(await asyncpg.connect(dsn=self._url, **self._options))
-        await _init_connection(self._connection._connection, self._type_converters)  # type: ignore
+        await _init_connection(self._connection._connection, self._type_converters)
 
     async def disconnect(self, timeout: Optional[int] = None) -> None:
         await asyncio.wait_for(self._connection._connection.close(), timeout)
@@ -212,7 +212,7 @@ class TestingBackend(BackendABC):
 
     async def _acquire_migration_connection(self) -> Connection:
         asyncpg_connection = await asyncpg.connect(dsn=self._url)
-        await _init_connection(asyncpg_connection, DEFAULT_TYPE_CONVERTERS)  # type: ignore
+        await _init_connection(asyncpg_connection, DEFAULT_TYPE_CONVERTERS)
         return Connection(asyncpg_connection)
 
     async def _release_migration_connection(self, connection: Connection) -> None:  # type: ignore[override]  # noqa: E501

@@ -23,7 +23,7 @@ try:
 except ImportError:
     from typing_extensions import LiteralString
 
-DEFAULT_TYPE_CONVERTERS = {
+DEFAULT_TYPE_CONVERTERS: TypeConverters = {
     "": {
         "json": (json.dumps, json.loads, dict),
     },
@@ -166,7 +166,7 @@ class Backend(BackendABC):
         self._options = options
         self._connections: Set[aiosqlite.Connection] = set()
         for _, converters in {**DEFAULT_TYPE_CONVERTERS, **type_converters}.items():
-            for typename, (encoder, decoder, pytype) in converters.items():  # type: ignore
+            for typename, (encoder, decoder, pytype) in converters.items():
                 aiosqlite.register_adapter(pytype, encoder)
                 aiosqlite.register_converter(typename, decoder)
 
@@ -212,7 +212,7 @@ class TestingBackend(BackendABC):
         self._path = path[1:]
         self._options = options
         for _, converters in {**DEFAULT_TYPE_CONVERTERS, **type_converters}.items():
-            for typename, (encoder, decoder, pytype) in converters.items():  # type: ignore
+            for typename, (encoder, decoder, pytype) in converters.items():
                 aiosqlite.register_adapter(pytype, encoder)
                 aiosqlite.register_converter(typename, decoder)
 
