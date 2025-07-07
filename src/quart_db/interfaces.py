@@ -7,6 +7,11 @@ try:
 except ImportError:
     from typing_extensions import LiteralString
 
+try:
+    from warnings import deprecated
+except ImportError:
+    from typing_extensions import deprecated
+
 
 ValueType = Union[Dict[str, Any], List[Any]]
 RecordType = Mapping[str, Any]
@@ -14,6 +19,10 @@ TypeConverters = Dict[str, Dict[str, Tuple[Callable, Callable, Optional[Type]]]]
 
 
 class UndefinedParameterError(Exception):
+    pass
+
+
+class MultipleRowsError(Exception):
     pass
 
 
@@ -77,11 +86,37 @@ class ConnectionABC(ABC):
         """
         pass
 
+    @deprecated("Use fetch_first instead")
     @abstractmethod
     async def fetch_one(
         self, query: LiteralString, values: Optional[ValueType] = None
     ) -> Optional[RecordType]:
-        """Execute a query, returning only the first result rows
+        """Execute a query, returning only the first result row
+
+        The query accepts named arguments i.e. `:name`in the query
+        with values set being a dictionary.
+
+        """
+        pass
+
+    @abstractmethod
+    async def fetch_first(
+        self, query: LiteralString, values: Optional[ValueType] = None
+    ) -> Optional[RecordType]:
+        """Execute a query, returning only the first result row
+
+        The query accepts named arguments i.e. `:name`in the query
+        with values set being a dictionary.
+
+        """
+        pass
+
+    @abstractmethod
+    async def fetch_sole(
+        self, query: LiteralString, values: Optional[ValueType] = None
+    ) -> Optional[RecordType]:
+        """Execute a query, returning the only row or raising if there
+        are multiple rows returned.
 
         The query accepts named arguments i.e. `:name`in the query
         with values set being a dictionary.

@@ -1,6 +1,6 @@
 import pytest
 
-from quart_db import Connection, UndefinedParameterError
+from quart_db import Connection, MultipleRowsError, UndefinedParameterError
 from quart_db.backends.asyncpg import Connection as AsyncpgConnection
 from quart_db.backends.psycopg import Connection as PsycopgConnection
 
@@ -39,6 +39,34 @@ async def test_fetch_one_list_params(connection: Connection) -> None:
 
 async def test_fetch_one_no_result(connection: Connection) -> None:
     result = await connection.fetch_one("SELECT * FROM tbl WHERE id = -1")
+    assert result is None
+
+
+async def test_fetch_sole(connection: Connection) -> None:
+    await connection.execute(
+        "INSERT INTO tbl (value) VALUES (:value)",
+        {"value": 3},
+    )
+    result = await connection.fetch_sole("SELECT * FROM tbl WHERE value = 3")
+    assert result["value"] == 3
+
+
+async def test_fetch_sole_raises(connection: Connection) -> None:
+    for _ in range(2):
+        await connection.execute(
+            "INSERT INTO tbl (value) VALUES (:value)",
+            {"value": 3},
+        )
+    with pytest.raises(MultipleRowsError):
+        await connection.fetch_sole("SELECT * FROM tbl WHERE value = 3")
+
+
+async def test_fetch_sole_no_result(connection: Connection) -> None:
+    await connection.execute(
+        "INSERT INTO tbl (value) VALUES (:value)",
+        {"value": 3},
+    )
+    result = await connection.fetch_sole("SELECT * FROM tbl WHERE value = 2")
     assert result is None
 
 

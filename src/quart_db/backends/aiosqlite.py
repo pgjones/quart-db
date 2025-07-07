@@ -11,6 +11,7 @@ import aiosqlite
 from ..interfaces import (
     BackendABC,
     ConnectionABC,
+    MultipleRowsError,
     RecordType,
     TransactionABC,
     TypeConverters,
@@ -22,6 +23,11 @@ try:
     from typing import LiteralString
 except ImportError:
     from typing_extensions import LiteralString
+
+try:
+    from warnings import deprecated
+except ImportError:
+    from typing_extensions import deprecated
 
 DEFAULT_TYPE_CONVERTERS: TypeConverters = {
     "": {
@@ -110,7 +116,7 @@ class Connection(ConnectionABC):
         else:
             return [{key: row[key] for key in row.keys()} for row in rows]
 
-    async def fetch_one(
+    async def fetch_first(
         self,
         query: LiteralString,
         values: Optional[ValueType] = None,
@@ -125,6 +131,33 @@ class Connection(ConnectionABC):
             if row is not None:
                 return {key: row[key] for key in row.keys()}
             return None
+
+    @deprecated("Use fetch_first instead")
+    async def fetch_one(
+        self,
+        query: LiteralString,
+        values: Optional[ValueType] = None,
+    ) -> Optional[RecordType]:
+        return await self.fetch_first(query, values)
+
+    async def fetch_sole(
+        self,
+        query: LiteralString,
+        values: Optional[ValueType] = None,
+    ) -> Optional[RecordType]:
+        try:
+            async with self._lock:
+                async with self._connection.execute(query, values) as cursor:
+                    rows = await cursor.fetchmany(2)
+        except ProgrammingError as error:
+            raise UndefinedParameterError(str(error))
+        else:
+            if len(rows) > 1:
+                raise MultipleRowsError()
+            elif len(rows) == 1:
+                return {key: rows[0][key] for key in rows[0].keys()}
+            else:
+                return None
 
     async def fetch_val(
         self,

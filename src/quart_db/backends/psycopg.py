@@ -14,6 +14,7 @@ from psycopg_pool import AsyncConnectionPool
 from ..interfaces import (
     BackendABC,
     ConnectionABC,
+    MultipleRowsError,
     RecordType,
     TransactionABC,
     TypeConverters,
@@ -25,6 +26,11 @@ try:
     from typing import LiteralString
 except ImportError:
     from typing_extensions import LiteralString
+
+try:
+    from warnings import deprecated
+except ImportError:
+    from typing_extensions import deprecated
 
 DEFAULT_TYPE_CONVERTERS: TypeConverters = {
     "pg_catalog": {
@@ -104,7 +110,7 @@ class Connection(ConnectionABC):
         except psycopg.ProgrammingError as error:
             raise UndefinedParameterError(str(error))
 
-    async def fetch_one(
+    async def fetch_first(
         self,
         query: LiteralString,
         values: Optional[ValueType] = None,
@@ -116,6 +122,34 @@ class Connection(ConnectionABC):
                 return await cursor.fetchone()  # type: ignore
         except psycopg.ProgrammingError as error:
             raise UndefinedParameterError(str(error))
+
+    @deprecated("Use fetch_first instead")
+    async def fetch_one(
+        self,
+        query: LiteralString,
+        values: Optional[ValueType] = None,
+    ) -> Optional[RecordType]:
+        return await self.fetch_first(query, values)
+
+    async def fetch_sole(
+        self,
+        query: LiteralString,
+        values: Optional[ValueType] = None,
+    ) -> Optional[RecordType]:
+        compiled_query, args = self._compile(query, values)
+        try:
+            async with self._connection.cursor() as cursor:
+                await cursor.execute(compiled_query, args)
+                rows = await cursor.fetchmany(2)
+        except psycopg.ProgrammingError as error:
+            raise UndefinedParameterError(str(error))
+        else:
+            if len(rows) > 1:
+                raise MultipleRowsError()
+            elif len(rows) == 1:
+                return rows[0]  # type: ignore
+            else:
+                return None
 
     async def fetch_val(
         self,
