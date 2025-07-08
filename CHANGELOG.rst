@@ -1,3 +1,8 @@
+0.10.0 2025-07-08
+-----------------
+
+* Replace fetch_one with fetch_first and fetch_sole
+
 0.9.0 2024-12-15
 ----------------
 
