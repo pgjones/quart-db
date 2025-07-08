@@ -32,7 +32,7 @@ creates an in memory sqlite database).
 
     @app.get("/<int:id>")
     async def get(id):
-        result = await g.connection.fetch_one(
+        result = await g.connection.fetch_first(
             "SELECT col1, col2 FROM tbl WHERE id = :id",
             {"id": id},
         )

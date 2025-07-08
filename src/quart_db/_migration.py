@@ -122,7 +122,9 @@ async def ensure_state_table(backend: BackendABC, state_table_name: str) -> None
 
     # This is required to migrate previous state version tables
     try:
-        result = await connection.fetch_one(f"SELECT version, data_loaded FROM {state_table_name}")
+        result = await connection.fetch_first(
+            f"SELECT version, data_loaded FROM {state_table_name}"
+        )
     except Exception:  # Either table or column "version" does not exist
         version = -1
         data_loaded = False
