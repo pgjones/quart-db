@@ -18,27 +18,27 @@ async def test_execute_many(connection: Connection) -> None:
     assert [2, 3] == [result["value"] for result in results]
 
 
-async def test_fetch_one(connection: Connection) -> None:
+async def test_fetch_first(connection: Connection) -> None:
     await connection.execute(
         "INSERT INTO tbl (value) VALUES (:value)",
         {"value": 2},
     )
-    result = await connection.fetch_one("SELECT * FROM tbl")
+    result = await connection.fetch_first("SELECT * FROM tbl")
     assert result["value"] == 2
 
 
-async def test_fetch_one_list_params(connection: Connection) -> None:
+async def test_fetch_first_list_params(connection: Connection) -> None:
     if isinstance(connection, (AsyncpgConnection, PsycopgConnection)):
         param = "$1"
     else:
         param = "?"
     await connection.execute(f"INSERT INTO tbl (data) VALUES ({param})", [{"A": 2}])
-    result = await connection.fetch_one("SELECT * FROM tbl")
+    result = await connection.fetch_first("SELECT * FROM tbl")
     assert result["data"] == {"A": 2}
 
 
-async def test_fetch_one_no_result(connection: Connection) -> None:
-    result = await connection.fetch_one("SELECT * FROM tbl WHERE id = -1")
+async def test_fetch_first_no_result(connection: Connection) -> None:
+    result = await connection.fetch_first("SELECT * FROM tbl WHERE id = -1")
     assert result is None
 
 
