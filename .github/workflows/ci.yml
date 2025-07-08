@@ -6,6 +6,8 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
+permissions: {}
+
 jobs:
   tox:
     name: ${{ matrix.name }}
@@ -15,7 +17,7 @@ jobs:
 
     services:
       postgres:
-        image: postgres
+        image: postgres:17
         env:
           POSTGRES_DB: quart_db
           POSTGRES_USER: quart_db
@@ -46,7 +48,7 @@ jobs:
       DATABASE_URL: "postgresql://quart_db:quart_db@postgres:5432/quart_db"
 
     steps:
-      - uses: pgjones/actions/tox@v1
+      - uses: pgjones/actions/tox@dbbee601c084d000c4fc711d4b27cb306e15ead1 # v1
         with:
           environment: ${{ matrix.tox }}
 
@@ -55,4 +57,4 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: pgjones/actions/zizmor@v1
+      - uses: pgjones/actions/zizmor@dbbee601c084d000c4fc711d4b27cb306e15ead1 # v1
