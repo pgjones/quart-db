@@ -1,3 +1,8 @@
+0.10.1 2025-08-20
+-----------------
+
+* Replace remaining instances of fetch_one with fetch_first.
+
 0.10.0 2025-07-08
 -----------------
 

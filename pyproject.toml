@@ -1,6 +1,6 @@
 [project]
 name = "quart-db"
-version = "0.10.0"
+version = "0.10.1"
 description = "Quart-DB is a Quart extension that provides managed connection(s) to database(s)."
 authors = [
     {name = "pgjones", email = "philip.graham.jones@googlemail.com"},
