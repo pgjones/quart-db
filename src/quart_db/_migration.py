@@ -1,8 +1,9 @@
 import importlib.util
+from collections.abc import AsyncGenerator, Callable
 from contextlib import AbstractAsyncContextManager, asynccontextmanager
 from pathlib import Path
 from types import ModuleType
-from typing import AsyncGenerator, Callable, Literal
+from typing import Literal
 
 from .interfaces import BackendABC, ConnectionABC
 

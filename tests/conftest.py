@@ -1,6 +1,6 @@
 import os
+from collections.abc import AsyncGenerator
 from pathlib import Path
-from typing import AsyncGenerator
 from urllib.parse import urlsplit, urlunsplit
 
 import pytest

@@ -1,7 +1,8 @@
 import asyncio
 import json
+from collections.abc import AsyncGenerator
 from types import TracebackType
-from typing import Any, AsyncGenerator, Dict, List, Optional, Tuple
+from typing import Any
 
 import asyncpg
 import psycopg
@@ -43,7 +44,7 @@ DEFAULT_TYPE_CONVERTERS: TypeConverters = {
 class Transaction(TransactionABC):
     def __init__(self, connection: "Connection", *, force_rollback: bool = False) -> None:
         self._connection = connection
-        self._transaction: Optional[psycopg.AsyncTransaction] = None
+        self._transaction: psycopg.AsyncTransaction | None = None
         self._force_rollback = force_rollback
 
     async def __aenter__(self) -> "Transaction":
@@ -76,7 +77,7 @@ class Connection(ConnectionABC):
     def __init__(self, connection: psycopg.AsyncConnection) -> None:
         self._connection = connection
 
-    async def execute(self, query: LiteralString, values: Optional[ValueType] = None) -> None:
+    async def execute(self, query: LiteralString, values: ValueType | None = None) -> None:
         compiled_query, args = self._compile(query, values)
         try:
             async with self._connection.cursor() as cursor:
@@ -84,7 +85,7 @@ class Connection(ConnectionABC):
         except psycopg.ProgrammingError as error:
             raise UndefinedParameterError(str(error))
 
-    async def execute_many(self, query: LiteralString, values: List[ValueType]) -> None:
+    async def execute_many(self, query: LiteralString, values: list[ValueType]) -> None:
         if not values:
             return
 
@@ -100,8 +101,8 @@ class Connection(ConnectionABC):
     async def fetch_all(
         self,
         query: LiteralString,
-        values: Optional[ValueType] = None,
-    ) -> List[RecordType]:
+        values: ValueType | None = None,
+    ) -> list[RecordType]:
         compiled_query, args = self._compile(query, values)
         try:
             async with self._connection.cursor() as cursor:
@@ -113,8 +114,8 @@ class Connection(ConnectionABC):
     async def fetch_first(
         self,
         query: LiteralString,
-        values: Optional[ValueType] = None,
-    ) -> Optional[RecordType]:
+        values: ValueType | None = None,
+    ) -> RecordType | None:
         compiled_query, args = self._compile(query, values)
         try:
             async with self._connection.cursor() as cursor:
@@ -127,15 +128,15 @@ class Connection(ConnectionABC):
     async def fetch_one(
         self,
         query: LiteralString,
-        values: Optional[ValueType] = None,
-    ) -> Optional[RecordType]:
+        values: ValueType | None = None,
+    ) -> RecordType | None:
         return await self.fetch_first(query, values)
 
     async def fetch_sole(
         self,
         query: LiteralString,
-        values: Optional[ValueType] = None,
-    ) -> Optional[RecordType]:
+        values: ValueType | None = None,
+    ) -> RecordType | None:
         compiled_query, args = self._compile(query, values)
         try:
             async with self._connection.cursor() as cursor:
@@ -154,8 +155,8 @@ class Connection(ConnectionABC):
     async def fetch_val(
         self,
         query: LiteralString,
-        values: Optional[ValueType] = None,
-    ) -> Optional[Any]:
+        values: ValueType | None = None,
+    ) -> Any | None:
         compiled_query, args = self._compile(query, values)
         try:
             async with self._connection.cursor() as cursor:
@@ -171,7 +172,7 @@ class Connection(ConnectionABC):
     async def iterate(
         self,
         query: LiteralString,
-        values: Optional[ValueType] = None,
+        values: ValueType | None = None,
     ) -> AsyncGenerator[RecordType, None]:
         compiled_query, args = self._compile(query, values)
         async with self._connection.cursor() as cursor:
@@ -185,8 +186,8 @@ class Connection(ConnectionABC):
         return Transaction(self, force_rollback=force_rollback)
 
     def _compile(
-        self, query: LiteralString, values: Optional[ValueType] = None
-    ) -> Tuple[str, List[Any]]:
+        self, query: LiteralString, values: ValueType | None = None
+    ) -> tuple[str, list[Any]]:
         if isinstance(values, list):
             return query, values
         else:
@@ -197,8 +198,8 @@ class Connection(ConnectionABC):
 
 
 class Backend(BackendABC):
-    def __init__(self, url: str, options: Dict[str, Any], type_converters: TypeConverters) -> None:
-        self._pool: Optional[asyncpg.Pool] = None
+    def __init__(self, url: str, options: dict[str, Any], type_converters: TypeConverters) -> None:
+        self._pool: asyncpg.Pool | None = None
         self._url = url
         self._options = options
         self._type_converters = {**DEFAULT_TYPE_CONVERTERS, **type_converters}
@@ -216,7 +217,7 @@ class Backend(BackendABC):
             )
             await self._pool.open()
 
-    async def disconnect(self, timeout: Optional[int] = None) -> None:
+    async def disconnect(self, timeout: int | None = None) -> None:
         if self._pool is not None:
             await asyncio.wait_for(self._pool.close(), timeout)
         self._pool = None
@@ -244,7 +245,7 @@ class Backend(BackendABC):
 
 
 class TestingBackend(BackendABC):
-    def __init__(self, url: str, options: Dict[str, Any], type_converters: TypeConverters) -> None:
+    def __init__(self, url: str, options: dict[str, Any], type_converters: TypeConverters) -> None:
         self._url = url
         self._options = options
         self._type_converters = {**DEFAULT_TYPE_CONVERTERS, **type_converters}
@@ -260,7 +261,7 @@ class TestingBackend(BackendABC):
         )
         await _init_connection(self._connection._connection, self._type_converters)  # type: ignore
 
-    async def disconnect(self, timeout: Optional[int] = None) -> None:
+    async def disconnect(self, timeout: int | None = None) -> None:
         await asyncio.wait_for(self._connection._connection.close(), timeout)
 
     async def acquire(self) -> Connection:

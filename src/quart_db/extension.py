@@ -1,8 +1,9 @@
 import asyncio
 from collections import defaultdict
+from collections.abc import AsyncIterator, Callable
 from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import Any, AsyncIterator, Callable, Dict, Optional, Type
+from typing import Any
 from urllib.parse import urlsplit, urlunsplit
 
 import click
@@ -73,16 +74,16 @@ class QuartDB:
 
     def __init__(
         self,
-        app: Optional[Quart] = None,
+        app: Quart | None = None,
         *,
-        url: Optional[str] = None,
-        migrations_folder: Optional[str] = "migrations",
-        data_path: Optional[str] = None,
+        url: str | None = None,
+        migrations_folder: str | None = "migrations",
+        data_path: str | None = None,
         auto_request_connection: bool = True,
-        backend_options: Optional[Dict[str, Any]] = None,
-        test_connection_options: Optional[Dict[str, Any]] = None,
-        migration_timeout: Optional[float] = None,
-        state_table_name: Optional[str] = None,
+        backend_options: dict[str, Any] | None = None,
+        test_connection_options: dict[str, Any] | None = None,
+        migration_timeout: float | None = None,
+        state_table_name: str | None = None,
     ) -> None:
         self._close_timeout = 5  # Seconds
         self._url = url
@@ -92,7 +93,7 @@ class QuartDB:
         self._test_connection_options = test_connection_options
         if self._test_connection_options is None:
             self._test_connection_options = {}
-        self._backend: Optional[BackendABC] = None
+        self._backend: BackendABC | None = None
         self._type_converters: TypeConverters = defaultdict(dict)
         self._migrations_folder = migrations_folder
         self._migration_timeout = migration_timeout
@@ -151,7 +152,7 @@ class QuartDB:
     async def before_request(self) -> None:
         g.connection = await self.acquire()
 
-    async def teardown_request(self, _exception: Optional[BaseException]) -> None:
+    async def teardown_request(self, _exception: BaseException | None) -> None:
         if getattr(g, "connection", None) is not None:
             await self.release(g.connection)
         g.connection = None
@@ -232,7 +233,7 @@ class QuartDB:
         encoder: Callable,
         decoder: Callable,
         *,
-        pytype: Optional[Type] = None,
+        pytype: type | None = None,
         schema: str = "public",
     ) -> None:
         """Set the type converter
@@ -282,7 +283,7 @@ class QuartDB:
     help="Output the schema diagram to a file given by a path.",
 )
 @pass_script_info
-def _schema_command(info: ScriptInfo, output: Optional[str]) -> None:
+def _schema_command(info: ScriptInfo, output: str | None) -> None:
     app = info.load_app()
 
     try:

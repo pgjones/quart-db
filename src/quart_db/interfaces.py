@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
+from collections.abc import AsyncGenerator, Callable, Mapping
 from types import TracebackType
-from typing import Any, AsyncGenerator, Callable, Dict, List, Mapping, Optional, Tuple, Type, Union
+from typing import Any
 
 try:
     from typing import LiteralString
@@ -13,9 +14,9 @@ except ImportError:
     from typing_extensions import deprecated
 
 
-ValueType = Union[Dict[str, Any], List[Any]]
+ValueType = dict[str, Any] | list[Any]
 RecordType = Mapping[str, Any]
-TypeConverters = Dict[str, Dict[str, Tuple[Callable, Callable, Optional[Type]]]]
+TypeConverters = dict[str, dict[str, tuple[Callable, Callable, type | None]]]
 
 
 class UndefinedParameterError(Exception):
@@ -55,7 +56,7 @@ class ConnectionABC(ABC):
         pass
 
     @abstractmethod
-    async def execute(self, query: LiteralString, values: Optional[ValueType] = None) -> None:
+    async def execute(self, query: LiteralString, values: ValueType | None = None) -> None:
         """Execute a query, with bind values if needed
 
         The query accepts named arguments i.e. `:name`in the query
@@ -65,7 +66,7 @@ class ConnectionABC(ABC):
         pass
 
     @abstractmethod
-    async def execute_many(self, query: LiteralString, values: List[ValueType]) -> None:
+    async def execute_many(self, query: LiteralString, values: list[ValueType]) -> None:
         """Execute a query for each set of values
 
         The query accepts a list of named arguments i.e. `:name`in the
@@ -76,8 +77,8 @@ class ConnectionABC(ABC):
 
     @abstractmethod
     async def fetch_all(
-        self, query: LiteralString, values: Optional[ValueType] = None
-    ) -> List[RecordType]:
+        self, query: LiteralString, values: ValueType | None = None
+    ) -> list[RecordType]:
         """Execute a query, returning all the result rows
 
         The query accepts named arguments i.e. `:name`in the query
@@ -89,8 +90,8 @@ class ConnectionABC(ABC):
     @deprecated("Use fetch_first instead")
     @abstractmethod
     async def fetch_one(
-        self, query: LiteralString, values: Optional[ValueType] = None
-    ) -> Optional[RecordType]:
+        self, query: LiteralString, values: ValueType | None = None
+    ) -> RecordType | None:
         """Execute a query, returning only the first result row
 
         The query accepts named arguments i.e. `:name`in the query
@@ -101,8 +102,8 @@ class ConnectionABC(ABC):
 
     @abstractmethod
     async def fetch_first(
-        self, query: LiteralString, values: Optional[ValueType] = None
-    ) -> Optional[RecordType]:
+        self, query: LiteralString, values: ValueType | None = None
+    ) -> RecordType | None:
         """Execute a query, returning only the first result row
 
         The query accepts named arguments i.e. `:name`in the query
@@ -113,8 +114,8 @@ class ConnectionABC(ABC):
 
     @abstractmethod
     async def fetch_sole(
-        self, query: LiteralString, values: Optional[ValueType] = None
-    ) -> Optional[RecordType]:
+        self, query: LiteralString, values: ValueType | None = None
+    ) -> RecordType | None:
         """Execute a query, returning the only row or raising if there
         are multiple rows returned.
 
@@ -125,9 +126,7 @@ class ConnectionABC(ABC):
         pass
 
     @abstractmethod
-    async def fetch_val(
-        self, query: LiteralString, values: Optional[ValueType] = None
-    ) -> Optional[Any]:
+    async def fetch_val(self, query: LiteralString, values: ValueType | None = None) -> Any | None:
         """Execute a query, returning only a value
 
         The query accepts named arguments i.e. `:name`in the query
@@ -140,7 +139,7 @@ class ConnectionABC(ABC):
     def iterate(
         self,
         query: LiteralString,
-        values: Optional[ValueType] = None,
+        values: ValueType | None = None,
     ) -> AsyncGenerator[RecordType, None]:
         """Execute a query, and iterate over the result rows
 
@@ -168,7 +167,7 @@ class ConnectionABC(ABC):
 class BackendABC(ABC):
     @abstractmethod
     def __init__(
-        self, url: str, options: Optional[Dict[str, Any]], type_converters: TypeConverters
+        self, url: str, options: dict[str, Any] | None, type_converters: TypeConverters
     ) -> None:
         pass
 
@@ -183,7 +182,7 @@ class BackendABC(ABC):
         pass
 
     @abstractmethod
-    async def disconnect(self, timeout: Optional[int] = None) -> None:
+    async def disconnect(self, timeout: int | None = None) -> None:
         """Disconnect from the database.
 
         This will wait up to timeout for any active queries to

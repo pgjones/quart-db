@@ -1,5 +1,5 @@
 from asyncio import CancelledError
-from typing import NoReturn, Type
+from typing import NoReturn
 
 import pytest
 from quart import g, Quart, ResponseReturnValue
@@ -26,7 +26,7 @@ async def test_extension(url: str) -> None:
     "exception",
     [CancelledError, ValueError],
 )
-async def test_g_connection_release(url: str, exception: Type[Exception]) -> None:
+async def test_g_connection_release(url: str, exception: type[Exception]) -> None:
     if not url.startswith("sqlite"):
         pytest.skip("aiosqlite - simpler backend to test")
 
