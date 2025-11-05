@@ -213,6 +213,7 @@ class Backend(BackendABC):
                     "cursor_factory": psycopg.AsyncRawCursor,
                     "row_factory": dict_row,
                 },
+                open=False,
                 **self._options,
             )
             await self._pool.open()
