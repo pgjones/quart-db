@@ -1,3 +1,10 @@
+0.11.0 2025-10-05
+-----------------
+
+* Remove deprecated fetch_one
+* Remove background migrations
+* Drop Python 3.9 and support 3.14
+
 0.10.1 2025-08-20
 -----------------
 
