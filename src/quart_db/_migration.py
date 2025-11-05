@@ -3,7 +3,6 @@ from collections.abc import AsyncGenerator, Callable
 from contextlib import AbstractAsyncContextManager, asynccontextmanager
 from pathlib import Path
 from types import ModuleType
-from typing import Literal
 
 from .interfaces import BackendABC, ConnectionABC
 
@@ -17,7 +16,7 @@ async def null_context() -> AsyncGenerator[None, None]:
     yield None
 
 
-async def execute_foreground_migrations(
+async def execute_migrations(
     backend: BackendABC,
     migrations_path: Path,
     state_table_name: str,
@@ -25,7 +24,7 @@ async def execute_foreground_migrations(
     connection = await backend._acquire_migration_connection()
     try:
         async for module in _migration_generator(
-            connection, "foreground", migrations_path, state_table_name, connection.transaction
+            connection, migrations_path, state_table_name, connection.transaction
         ):
             await module.migrate(connection)
             valid = not hasattr(module, "valid_migration") or await module.valid_migration(
@@ -33,23 +32,6 @@ async def execute_foreground_migrations(
             )
             if not valid:
                 raise MigrationFailedError(f"Migration {module.__name__} is not valid")
-    finally:
-        await backend._release_migration_connection(connection)
-
-
-async def execute_background_migrations(
-    backend: BackendABC,
-    migrations_path: Path,
-    state_table_name: str,
-) -> None:
-    connection = await backend._acquire_migration_connection()
-    try:
-        async for module in _migration_generator(
-            connection, "background", migrations_path, state_table_name, null_context
-        ):
-            migrate = getattr(module, "background_migrate", None)
-            if migrate is not None:
-                await migrate(connection)
     finally:
         await backend._release_migration_connection(connection)
 
@@ -88,7 +70,6 @@ def _load_module(name: str, path: Path) -> ModuleType:
 
 async def _migration_generator(
     connection: ConnectionABC,
-    type_name: Literal["foreground", "background"],
     migrations_path: Path,
     state_table_name: str,
     context: Callable[..., AbstractAsyncContextManager],
@@ -98,7 +79,7 @@ async def _migration_generator(
     while True:
         async with context():
             migration = await connection.fetch_val(
-                f"SELECT {type_name} FROM {state_table_name} {for_update}"
+                f"SELECT version FROM {state_table_name} {for_update}"
             )
             migration += 1
             migration_path = migrations_path / f"{migration}.py"
@@ -113,7 +94,7 @@ async def _migration_generator(
             yield module
 
             await connection.execute(
-                f"UPDATE {state_table_name} SET {type_name} = :migration",
+                f"UPDATE {state_table_name} SET version = :migration",
                 values={"migration": migration},
             )
 
@@ -124,12 +105,12 @@ async def ensure_state_table(backend: BackendABC, state_table_name: str) -> None
     # This is required to migrate previous state version tables
     try:
         result = await connection.fetch_first(
-            f"SELECT version, data_loaded FROM {state_table_name}"
+            f"SELECT foreground AS version, data_loaded FROM {state_table_name}"
         )
-    except Exception:  # Either table or column "version" does not exist
+    except Exception:  # Either table or column "foreground" does not exist
         version = -1
         data_loaded = False
-    else:  # "version" does exist => old table structure
+    else:  # "foreground" does exist => old table structure
         version = result["version"]
         data_loaded = result["data_loaded"]
         await connection.execute(f"DROP TABLE {state_table_name}")
@@ -138,16 +119,15 @@ async def ensure_state_table(backend: BackendABC, state_table_name: str) -> None
         await connection.execute(
             f"""CREATE TABLE IF NOT EXISTS {state_table_name} (
                    onerow_id BOOL PRIMARY KEY DEFAULT TRUE,
-                   background INTEGER NOT NULL,
                    data_loaded BOOL NOT NULL,
-                   foreground INTEGER NOT NULL,
+                   version INTEGER NOT NULL,
 
                    CONSTRAINT onerow_uni CHECK (onerow_id)
                )""",
         )
         await connection.execute(
-            f"""INSERT INTO {state_table_name} (background, data_loaded, foreground)
-                     VALUES (:version, :data_loaded, :version)
+            f"""INSERT INTO {state_table_name} (data_loaded, version)
+                     VALUES (:data_loaded, :version)
                 ON CONFLICT DO NOTHING""",
             {"version": version, "data_loaded": data_loaded},
         )

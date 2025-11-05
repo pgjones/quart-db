@@ -10,12 +10,7 @@ import click
 from quart import g, Quart
 from quart.cli import pass_script_info, ScriptInfo
 
-from ._migration import (
-    ensure_state_table,
-    execute_background_migrations,
-    execute_data_loader,
-    execute_foreground_migrations,
-)
+from ._migration import ensure_state_table, execute_data_loader, execute_migrations
 from .interfaces import BackendABC, ConnectionABC, TypeConverters
 
 
@@ -157,27 +152,12 @@ class QuartDB:
             await self.release(g.connection)
         g.connection = None
 
-    async def migrate(self, force_foreground: bool = False) -> None:
+    async def migrate(self) -> None:
         await ensure_state_table(self._backend, self._state_table_name)
 
         if self._migrations_folder is not None:
             migrations_folder = self._root_path / self._migrations_folder
-            await execute_foreground_migrations(
-                self._backend, migrations_folder, self._state_table_name
-            )
-            if force_foreground:
-                await execute_background_migrations(
-                    self._backend,
-                    migrations_folder,
-                    self._state_table_name,
-                )
-            else:
-                self._app.add_background_task(
-                    execute_background_migrations,
-                    self._backend,
-                    migrations_folder,
-                    self._state_table_name,
-                )
+            await execute_migrations(self._backend, migrations_folder, self._state_table_name)
 
         if self._data_path is not None:
             data_path = self._root_path / self._data_path
