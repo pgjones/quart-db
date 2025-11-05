@@ -25,11 +25,6 @@ try:
 except ImportError:
     from typing_extensions import LiteralString
 
-try:
-    from warnings import deprecated
-except ImportError:
-    from typing_extensions import deprecated
-
 DEFAULT_TYPE_CONVERTERS: TypeConverters = {
     "": {
         "json": (json.dumps, json.loads, dict),
@@ -132,14 +127,6 @@ class Connection(ConnectionABC):
             if row is not None:
                 return {key: row[key] for key in row.keys()}
             return None
-
-    @deprecated("Use fetch_first instead")
-    async def fetch_one(
-        self,
-        query: LiteralString,
-        values: ValueType | None = None,
-    ) -> RecordType | None:
-        return await self.fetch_first(query, values)
 
     async def fetch_sole(
         self,

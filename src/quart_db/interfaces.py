@@ -8,12 +8,6 @@ try:
 except ImportError:
     from typing_extensions import LiteralString
 
-try:
-    from warnings import deprecated
-except ImportError:
-    from typing_extensions import deprecated
-
-
 ValueType = dict[str, Any] | list[Any]
 RecordType = Mapping[str, Any]
 TypeConverters = dict[str, dict[str, tuple[Callable, Callable, type | None]]]
@@ -80,19 +74,6 @@ class ConnectionABC(ABC):
         self, query: LiteralString, values: ValueType | None = None
     ) -> list[RecordType]:
         """Execute a query, returning all the result rows
-
-        The query accepts named arguments i.e. `:name`in the query
-        with values set being a dictionary.
-
-        """
-        pass
-
-    @deprecated("Use fetch_first instead")
-    @abstractmethod
-    async def fetch_one(
-        self, query: LiteralString, values: ValueType | None = None
-    ) -> RecordType | None:
-        """Execute a query, returning only the first result row
 
         The query accepts named arguments i.e. `:name`in the query
         with values set being a dictionary.

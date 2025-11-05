@@ -28,11 +28,6 @@ try:
 except ImportError:
     from typing_extensions import LiteralString
 
-try:
-    from warnings import deprecated
-except ImportError:
-    from typing_extensions import deprecated
-
 DEFAULT_TYPE_CONVERTERS: TypeConverters = {
     "pg_catalog": {
         "json": (json.dumps, json.loads, dict),
@@ -123,14 +118,6 @@ class Connection(ConnectionABC):
                 return await cursor.fetchone()  # type: ignore
         except psycopg.ProgrammingError as error:
             raise UndefinedParameterError(str(error))
-
-    @deprecated("Use fetch_first instead")
-    async def fetch_one(
-        self,
-        query: LiteralString,
-        values: ValueType | None = None,
-    ) -> RecordType | None:
-        return await self.fetch_first(query, values)
 
     async def fetch_sole(
         self,
