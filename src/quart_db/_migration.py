@@ -111,7 +111,7 @@ async def ensure_state_table(backend: BackendABC, state_table_name: str) -> None
         version = -1
         data_loaded = False
     else:  # "foreground" does exist => old table structure
-        version = result["version"]
+        version = result["foreground"]
         data_loaded = result["data_loaded"]
         await connection.execute(f"DROP TABLE {state_table_name}")
 
