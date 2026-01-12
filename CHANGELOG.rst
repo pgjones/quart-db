@@ -1,3 +1,8 @@
+0.11.1 2026-01-12
+-----------------
+
+* Bugfix migration version when altering structure
+
 0.11.0 2025-10-05
 -----------------
 
