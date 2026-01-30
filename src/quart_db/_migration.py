@@ -102,34 +102,27 @@ async def _migration_generator(
 async def ensure_state_table(backend: BackendABC, state_table_name: str) -> None:
     connection = await backend._acquire_migration_connection()
 
-    # This is required to migrate previous state version tables
     try:
-        result = await connection.fetch_first(
-            f"SELECT foreground AS version, data_loaded FROM {state_table_name}"
-        )
-    except Exception:  # Either table or column "foreground" does not exist
-        version = -1
-        data_loaded = False
-    else:  # "foreground" does exist => old table structure
-        version = result["foreground"]
-        data_loaded = result["data_loaded"]
-        await connection.execute(f"DROP TABLE {state_table_name}")
+        async with connection.transaction():
+            if connection.supports_advisory_lock:
+                await connection.execute(f"SELECT pg_advisory_lock(hashtext('{state_table_name}'))")
 
-    try:
-        await connection.execute(
-            f"""CREATE TABLE IF NOT EXISTS {state_table_name} (
-                   onerow_id BOOL PRIMARY KEY DEFAULT TRUE,
-                   data_loaded BOOL NOT NULL,
-                   version INTEGER NOT NULL,
+            await connection.execute(
+                f"""CREATE TABLE IF NOT EXISTS {state_table_name} (
+                    onerow_id BOOL PRIMARY KEY DEFAULT TRUE,
+                    data_loaded BOOL NOT NULL,
+                    version INTEGER NOT NULL,
 
-                   CONSTRAINT onerow_uni CHECK (onerow_id)
-               )""",
-        )
-        await connection.execute(
-            f"""INSERT INTO {state_table_name} (data_loaded, version)
-                     VALUES (:data_loaded, :version)
-                ON CONFLICT DO NOTHING""",
-            {"version": version, "data_loaded": data_loaded},
-        )
+                    CONSTRAINT onerow_uni CHECK (onerow_id)
+                )""",
+            )
+            await connection.execute(
+                f"""INSERT INTO {state_table_name} (data_loaded, version)
+                        VALUES (FALSE, -1)
+                    ON CONFLICT DO NOTHING""",
+            )
     finally:
+        if connection.supports_advisory_lock:
+            await connection.execute(f"SELECT pg_advisory_unlock(hashtext('{state_table_name}'))")
+
         await backend._release_migration_connection(connection)

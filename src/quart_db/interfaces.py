@@ -46,6 +46,11 @@ class TransactionABC(ABC):
 class ConnectionABC(ABC):
     @property
     @abstractmethod
+    def supports_advisory_lock(self) -> bool:
+        pass
+
+    @property
+    @abstractmethod
     def supports_for_update(self) -> bool:
         pass
 

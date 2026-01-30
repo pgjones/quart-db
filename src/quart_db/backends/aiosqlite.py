@@ -75,6 +75,7 @@ class Transaction(TransactionABC):
 
 
 class Connection(ConnectionABC):
+    supports_advisory_lock = False
     supports_for_update = False
 
     def __init__(self, connection: aiosqlite.Connection) -> None:

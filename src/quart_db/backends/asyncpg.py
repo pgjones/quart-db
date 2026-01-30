@@ -64,6 +64,7 @@ class Transaction(TransactionABC):
 
 
 class Connection(ConnectionABC):
+    supports_advisory_lock = True
     supports_for_update = True
 
     def __init__(self, connection: asyncpg.Connection) -> None:
