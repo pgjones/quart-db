@@ -1,3 +1,10 @@
+0.12.0 2026-01-30
+-----------------
+
+* Lock the DB, if possible, when creating the state table. This removes
+  support for pre 0.11.0 state tables. If upgrading from a version <0.11.0
+  please upgrade to 0.11.0 first.
+
 0.11.1 2026-01-12
 -----------------
 
