@@ -282,7 +282,7 @@ def _migrate_command(info: ScriptInfo) -> None:
     async def _inner() -> None:
         for extension in app.extensions["QUART_DB"]:
             extension._backend = extension._create_backend()
-            await extension.migrate(force_foreground=True)
+            await extension.migrate()
 
     asyncio.run(_inner())
     click.echo("Quart-DB migration complete")
